@@ -1,4 +1,5 @@
 # coding=utf-8
+import string
 import sys
 
 from colorclass import Color
@@ -43,6 +44,25 @@ def test_common():
     assert not Color('a').isupper()
 
     assert 'test test' == Color(' ').join(('test', 'test'))
+    assert 'this is a test.     ' == value.ljust(20)
+    assert 'a' == Color('A').lower()
+    assert 'a ' == Color(' a ').lstrip()
+    assert ('this', ' ', 'is a test.') == value.partition(' ')
+    assert 'this was a test.' == value.replace(' is ', ' was ')
+    assert 13 == value.rfind('t')
+    assert 13 == value.rindex('t')
+    assert '     this is a test.' == value.rjust(20)
+    assert ('this is a', ' ', 'test.') == value.rpartition(' ')
+    assert ['this is a', 'test.'] == value.rsplit(' ', 1)
+    assert ' a' == Color(' a ').rstrip()
+    assert ['this', 'is', 'a', 'test.'] == value.split(' ')
+    assert ['a', 'a'] == Color('a\na').splitlines()
+    assert value.startswith('this')
+    assert 'a' == Color(' a ').strip()
+    assert 'Aa' == Color('aA').swapcase()
+    assert 'This Is A Test.' == value.title()
+    assert 'THIS IS A TEST.' == value.upper()
+    assert '000001' == Color('1').zfill(6)
 
 
 def test_py2():
@@ -51,11 +71,13 @@ def test_py2():
     value = Color('this is a test.')
 
     assert 'this is a test.' == value.decode()
+    assert 'th3s 3s 1 t2st.' == value.translate(string.maketrans('aeiou', '12345').decode('latin-1'))
 
 
 def test_py3():
     if sys.version_info[0] != 3:
         return
+    value = Color('this is a test.')
 
     assert 'ss' == Color('ß').casefold()
     assert 'Guido was born in country' == Color('{name} was born in {country}').format_map(Default(name='Guido'))
@@ -64,3 +86,5 @@ def test_py3():
     assert not Color('var-').isidentifier()
     assert Color('var').isprintable()
     assert not Color('\0').isprintable()
+
+    assert 'th3s 3s 1 t2st.' == value.translate(Color.maketrans('aeiou', '12345'))
