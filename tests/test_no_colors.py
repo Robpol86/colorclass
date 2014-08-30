@@ -23,6 +23,27 @@ def test_common():
     assert 'test 123' == Color('test {0}').format('123')
     assert 8 == value.index('a')
 
+    assert Color('a1').isalnum()
+    assert not Color('a1.').isalnum()
+    assert Color('a').isalpha()
+    assert not Color('a1').isalpha()
+    assert Color('1').isdecimal()
+    assert not Color(u'⅕').isdecimal()
+    assert Color(u'²').isdigit()
+    assert not Color(u'⅕').isdigit()
+    assert Color('a').islower()
+    assert not Color('A').islower()
+    assert Color(u'⅕').isnumeric()
+    assert not Color('A').isnumeric()
+    assert Color('    ').isspace()
+    assert not Color('    x').isspace()
+    assert Color('I Love To Test').istitle()
+    assert not Color('I Love to Test').istitle()
+    assert Color('A').isupper()
+    assert not Color('a').isupper()
+
+    assert 'test test' == Color(' ').join(('test', 'test'))
+
 
 def test_py2():
     if sys.version_info[0] != 2:
@@ -38,3 +59,8 @@ def test_py3():
 
     assert 'ss' == Color('ß').casefold()
     assert 'Guido was born in country' == Color('{name} was born in {country}').format_map(Default(name='Guido'))
+
+    assert Color('var').isidentifier()
+    assert not Color('var-').isidentifier()
+    assert Color('var').isprintable()
+    assert not Color('\0').isprintable()
