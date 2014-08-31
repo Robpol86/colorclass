@@ -41,8 +41,10 @@ _BASE_CODES = {
     '/autored': 39, '/autoblack': 39, '/automagenta': 39, '/autowhite': 39, '/autoblue': 39, '/autoyellow': 39,
     '/autogreen': 39, '/autocyan': 39,
 }
-_RE_GROUP_SEARCH = re.compile(r'(?:\033\[\d+m)+')
-_RE_NUMBER_SEARCH = re.compile(r'\033\[(\d+)m')
+_RE_GROUP_SEARCH = re.compile(r'(?:\033\[[\d;]+m)+')
+_RE_NUMBER_SEARCH = re.compile(r'\033\[([\d;]+)m')
+_RE_SPLIT = re.compile(r'(\033\[[\d;]+m)')
+PARENT_CLASS = unicode if sys.version_info[0] == 2 else str
 
 
 class _AutoCodes(Mapping):
@@ -184,20 +186,30 @@ def list_tags():
     return tuple(payload)
 
 
-class Color(unicode if sys.version_info[0] == 2 else str):
+class Color(PARENT_CLASS):
     """Unicode (str in Python3) subclass with ANSI terminal text color support.
 
     Example syntax: Color('{red}Sample Text{/red}')
 
     For a list of codes, call: colorclass.list_tags()
     """
+
     def __new__(cls, *args, **kwargs):
         parent_class = cls.__bases__[0]
-        value_markup = args[0] if args else parent_class('')
+        value_markup = args[0] if args else parent_class()
         value_colors, value_no_colors = _parse_input(value_markup)
         if args:
-            args = [value_no_colors] + list(args[1:])
+            args = [value_colors] + list(args[1:])
 
         obj = parent_class.__new__(cls, *args, **kwargs)
         obj.value_markup, obj.value_colors, obj.value_no_colors = value_markup, value_colors, value_no_colors
+        obj.has_colors = bool(_RE_NUMBER_SEARCH.match(value_colors))
         return obj
+
+    def translate(self, table):
+        split = _RE_SPLIT.split(self.value_colors)
+        for i in range(len(split)):
+            if _RE_SPLIT.match(split[i]):
+                continue
+            split[i] = PARENT_CLASS(split[i]).translate(table)
+        return Color().join(split)

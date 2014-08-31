@@ -72,7 +72,7 @@ def test_py2():
         return
     value = Color('this is a test.')
 
-    assert '' == Color('', 'latin-1')
+    assert ' ' == Color(' ', 'latin-1')
     assert 'abc' == Color('\x80abc', errors='ignore')
 
     assert 'this is a test.' == value.decode()
