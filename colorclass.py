@@ -225,7 +225,11 @@ class Color(PARENT_CLASS):
         return result.replace(self.value_no_colors, self.value_colors)
 
     def count(self, sub, start=None, end=None):
-        return PARENT_CLASS(self.value_no_colors).count(sub, start, end)
+        if end is not None:
+            return PARENT_CLASS(self.value_no_colors).count(sub, start, end)
+        if start is not None:
+            return PARENT_CLASS(self.value_no_colors).count(sub, start)
+        return PARENT_CLASS(self.value_no_colors).count(sub)
 
     def endswith(self, suffix, start=None, end=None):
         return PARENT_CLASS(self.value_no_colors).endswith(suffix, start, end)
