@@ -139,8 +139,8 @@ def _parse_input(incoming):
     2-item tuple. First item is the parsed output. Second item is a version of the input without any colors.
     """
     codes = _AutoCodes()
-    no_color_codes = {k: u'' for k in codes}
-    color_codes = {k: v for k, v in codes.items()}
+    no_color_codes = dict((k, u'') for k in codes)
+    color_codes = dict((k, v) for k, v in codes.items())
     incoming_padded = _pad_input(incoming)
 
     output_no_colors = incoming_padded.format(**no_color_codes)
