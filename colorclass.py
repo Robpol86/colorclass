@@ -4,12 +4,128 @@ https://github.com/Robpol86/colorclass
 https://pypi.python.org/pypi/colorclass
 """
 
+from collections import Mapping
 import sys
 
 __author__ = '@Robpol86'
 __license__ = 'MIT'
 __version__ = '0.0.1'
+_LIGHT_BACKGROUND = False
+BASE_CODES = {
+    '/all': 0, 'b': 1, 'f': 2, 'i': 3, 'u': 4, 'flash': 5, 'outline': 6, 'negative': 7, 'invis': 8, 'strike': 9,
+    '/b': 22, '/f': 22, '/i': 23, '/u': 24, '/flash': 25, '/outline': 26, '/negative': 27, '/invis': 28,
+    '/strike': 29, '/fg': 39, '/bg': 49,
+
+    'black': 30, 'red': 31, 'green': 32, 'yellow': 33, 'blue': 34, 'magenta': 35, 'cyan': 36, 'white': 37,
+
+    'bgblack': 40, 'bgred': 41, 'bggreen': 42, 'bgyellow': 43, 'bgblue': 44, 'bgmagenta': 45, 'bgcyan': 46,
+    'bgwhite': 47,
+
+    'hiblack': 90, 'hired': 91, 'higreen': 92, 'hiyellow': 93, 'hiblue': 94, 'himagenta': 95, 'hicyan': 96,
+    'hiwhite': 97,
+
+    'hibgblack': 100, 'hibgred': 101, 'hibggreen': 102, 'hibgyellow': 103, 'hibgblue': 104, 'hibgmagenta': 105,
+    'hibgcyan': 106, 'hibgwhite': 107,
+
+    'autored': None, 'autoblack': None, 'automagenta': None, 'autowhite': None, 'autoblue': None, 'autoyellow': None,
+    'autogreen': None, 'autocyan': None,
+
+    '/black': 39, '/red': 39, '/green': 39, '/yellow': 39, '/blue': 39, '/magenta': 39, '/cyan': 39, '/white': 39,
+    '/hiblack': 39, '/hired': 39, '/higreen': 39, '/hiyellow': 39, '/hiblue': 39, '/himagenta': 39, '/hicyan': 39,
+    '/hiwhite': 39,
+
+    '/bgblack': 49, '/bgred': 49, '/bggreen': 49, '/bgyellow': 49, '/bgblue': 49, '/bgmagenta': 49, '/bgcyan': 49,
+    '/bgwhite': 49, '/hibgblack': 49, '/hibgred': 49, '/hibggreen': 49, '/hibgyellow': 49, '/hibgblue': 49,
+    '/hibgmagenta': 49, '/hibgcyan': 49, '/hibgwhite': 49,
+
+    '/autored': 39, '/autoblack': 39, '/automagenta': 39, '/autowhite': 39, '/autoblue': 39, '/autoyellow': 39,
+    '/autogreen': 39, '/autocyan': 39,
+}
+
+
+def set_light_background():
+    """Chooses dark colors for all 'auto'-prefixed codes for readability on light backgrounds. Module-wide."""
+    global _LIGHT_BACKGROUND
+    _LIGHT_BACKGROUND = True
+
+
+def set_dark_background():
+    """Chooses dark colors for all 'auto'-prefixed codes for readability on light backgrounds. Module-wide."""
+    global _LIGHT_BACKGROUND
+    _LIGHT_BACKGROUND = False
+
+
+class AutoCodes(Mapping):
+    """Read-only subclass of dict, resolves closing tags (based on colorclass.CODES) and automatic colors."""
+
+    def __init__(self):
+        self.__dict = BASE_CODES.copy()
+
+    def __getitem__(self, item):
+        if item == 'autoblack':
+            return self.autoblack
+        elif item == 'autored':
+            return self.autored
+        elif item == 'autogreen':
+            return self.autogreen
+        elif item == 'autoyellow':
+            return self.autoyellow
+        elif item == 'autoblue':
+            return self.autoblue
+        elif item == 'automagenta':
+            return self.automagenta
+        elif item == 'autocyan':
+            return self.autocyan
+        elif item == 'autowhite':
+            return self.autowhite
+        else:
+            self.__dict.__getitem__(item)
+
+    def __iter__(self):
+        return iter(self.__dict)
+
+    def __len__(self):
+        return len(self.__dict)
+
+    @property
+    def autoblack(self):
+        return self.__dict['black' if _LIGHT_BACKGROUND else 'hiblack']
+
+    @property
+    def autored(self):
+        return self.__dict['red' if _LIGHT_BACKGROUND else 'hired']
+
+    @property
+    def autogreen(self):
+        return self.__dict['green' if _LIGHT_BACKGROUND else 'higreen']
+
+    @property
+    def autoyellow(self):
+        return self.__dict['yellow' if _LIGHT_BACKGROUND else 'hiyellow']
+
+    @property
+    def autoblue(self):
+        return self.__dict['blue' if _LIGHT_BACKGROUND else 'hiblue']
+
+    @property
+    def automagenta(self):
+        return self.__dict['magenta' if _LIGHT_BACKGROUND else 'himagenta']
+
+    @property
+    def autocyan(self):
+        return self.__dict['cyan' if _LIGHT_BACKGROUND else 'hicyan']
+
+    @property
+    def autowhite(self):
+        return self.__dict['white' if _LIGHT_BACKGROUND else 'hiwhite']
 
 
 class Color(unicode if sys.version_info[0] == 2 else str):
-    pass
+    """Unicode (str in Python3) subclass with ANSI terminal text color support.
+
+    Example syntax: Color('{red}Sample Text{/red}')
+
+    For a list of codes,
+    """
+    def __new__(cls, *args, **kwargs):
+        return cls.__bases__[0].__new__(cls, *args, **kwargs)

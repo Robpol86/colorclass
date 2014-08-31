@@ -13,8 +13,10 @@ class Default(dict):
 def test_common():
     value = Color('this is a test.')
 
+    assert '' == Color()
     assert 15 == len(value)
     assert 'this is a test.' == '{0}'.format(value)
+
     assert 'This is a test.' == value.capitalize()
     assert '  this is a test.   ' == value.center(20)
     assert 2 == value.count('is')
@@ -70,6 +72,9 @@ def test_py2():
         return
     value = Color('this is a test.')
 
+    assert '' == Color('', 'latin-1')
+    assert 'abc' == Color('\x80abc', errors='ignore')
+
     assert 'this is a test.' == value.decode()
     assert 'th3s 3s 1 t2st.' == value.translate(string.maketrans('aeiou', '12345').decode('latin-1'))
 
@@ -78,6 +83,9 @@ def test_py3():
     if sys.version_info[0] != 3:
         return
     value = Color('this is a test.')
+
+    assert '' == Color(b'', 'latin-1')
+    assert 'abc' == Color(b'\x80abc', errors='ignore')
 
     assert 'ss' == Color('ß').casefold()
     assert 'Guido was born in country' == Color('{name} was born in {country}').format_map(Default(name='Guido'))
