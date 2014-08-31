@@ -68,7 +68,7 @@ class PyTestCovWeb(PyTest):
 
 class CmdFlake(setuptools.Command):
     user_options = []
-    CMD_ARGS = ['flake8', '--max-line-length', '120', '--statistics', 'colorclass']
+    CMD_ARGS = ['flake8', '--max-line-length', '120', '--statistics', 'colorclass.py']
 
     def initialize_options(self):
         pass
@@ -81,7 +81,7 @@ class CmdFlake(setuptools.Command):
 
 
 class CmdLint(CmdFlake):
-    CMD_ARGS = ['pylint', '--max-line-length', '120', 'colorclass']
+    CMD_ARGS = ['pylint', '--max-line-length', '120', 'colorclass.py']
 
 
 # Setup definition.

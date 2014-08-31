@@ -41,13 +41,13 @@ _BASE_CODES = {
     '/autored': 39, '/autoblack': 39, '/automagenta': 39, '/autowhite': 39, '/autoblue': 39, '/autoyellow': 39,
     '/autogreen': 39, '/autocyan': 39,
 }
-_LIGHT_BACKGROUND = False
 _RE_GROUP_SEARCH = re.compile(r'(?:\033\[\d+m)+')
 _RE_NUMBER_SEARCH = re.compile(r'\033\[(\d+)m')
 
 
 class _AutoCodes(Mapping):
     """Read-only subclass of dict, resolves closing tags (based on colorclass.CODES) and automatic colors."""
+    LIGHT_BACKGROUND = False
 
     def __init__(self):
         self.__dict = _BASE_CODES.copy()
@@ -80,35 +80,35 @@ class _AutoCodes(Mapping):
 
     @property
     def autoblack(self):
-        return self.__dict['black' if _LIGHT_BACKGROUND else 'hiblack']
+        return self.__dict['black' if _AutoCodes.LIGHT_BACKGROUND else 'hiblack']
 
     @property
     def autored(self):
-        return self.__dict['red' if _LIGHT_BACKGROUND else 'hired']
+        return self.__dict['red' if _AutoCodes.LIGHT_BACKGROUND else 'hired']
 
     @property
     def autogreen(self):
-        return self.__dict['green' if _LIGHT_BACKGROUND else 'higreen']
+        return self.__dict['green' if _AutoCodes.LIGHT_BACKGROUND else 'higreen']
 
     @property
     def autoyellow(self):
-        return self.__dict['yellow' if _LIGHT_BACKGROUND else 'hiyellow']
+        return self.__dict['yellow' if _AutoCodes.LIGHT_BACKGROUND else 'hiyellow']
 
     @property
     def autoblue(self):
-        return self.__dict['blue' if _LIGHT_BACKGROUND else 'hiblue']
+        return self.__dict['blue' if _AutoCodes.LIGHT_BACKGROUND else 'hiblue']
 
     @property
     def automagenta(self):
-        return self.__dict['magenta' if _LIGHT_BACKGROUND else 'himagenta']
+        return self.__dict['magenta' if _AutoCodes.LIGHT_BACKGROUND else 'himagenta']
 
     @property
     def autocyan(self):
-        return self.__dict['cyan' if _LIGHT_BACKGROUND else 'hicyan']
+        return self.__dict['cyan' if _AutoCodes.LIGHT_BACKGROUND else 'hicyan']
 
     @property
     def autowhite(self):
-        return self.__dict['white' if _LIGHT_BACKGROUND else 'hiwhite']
+        return self.__dict['white' if _AutoCodes.LIGHT_BACKGROUND else 'hiwhite']
 
 
 def _pad_input(incoming):
@@ -163,15 +163,13 @@ def _parse_input(incoming):
 
 
 def set_light_background():
-    """Chooses dark colors for all 'auto'-prefixed codes for readability on light backgrounds. Module-wide."""
-    global _LIGHT_BACKGROUND
-    _LIGHT_BACKGROUND = True
+    """Chooses dark colors for all 'auto'-prefixed codes for readability on light backgrounds."""
+    _AutoCodes.LIGHT_BACKGROUND = True
 
 
 def set_dark_background():
-    """Chooses dark colors for all 'auto'-prefixed codes for readability on light backgrounds. Module-wide."""
-    global _LIGHT_BACKGROUND
-    _LIGHT_BACKGROUND = False
+    """Chooses dark colors for all 'auto'-prefixed codes for readability on light backgrounds."""
+    _AutoCodes.LIGHT_BACKGROUND = False
 
 
 def list_tags():

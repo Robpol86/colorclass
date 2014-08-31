@@ -1,6 +1,14 @@
 import colorclass
 
 
+def test_toggle():
+    colorclass.set_light_background()
+    assert colorclass._AutoCodes.LIGHT_BACKGROUND
+
+    colorclass.set_dark_background()
+    assert not colorclass._AutoCodes.LIGHT_BACKGROUND
+
+
 def test_auto_codes():
     codes = colorclass._AutoCodes()
 
