@@ -49,9 +49,9 @@ def test_common():
     assert 15 == len(value)
     assert '\033[31mthis is a test.\033[39m' == '{0}'.format(value)
 
-    return
     assert '\033[31mThis is a test.\033[39m' == value.capitalize()
     assert '  \033[31mthis is a test.\033[39m   ' == value.center(20)
+    assert '@@\033[31mthis is a test.\033[39m@@@' == value.center(20, '@')
     assert 2 == value.count('is')
     assert 2 == Color('{red}I love m&ms{/red}').count('m')
     assert value.endswith('test.')
@@ -61,6 +61,7 @@ def test_common():
     assert '\033[31mtest 123\033[39m' == Color('{red}test {0}{/red}').format('123')
     assert 8 == value.index('a')
     assert 7 == Color('{red}I love m&ms{/red}').index('m')
+    return
 
     assert Color('{red}a1{/red}').isalnum()
     assert not Color('{red}a1.{/red}').isalnum()
@@ -119,7 +120,6 @@ def test_py2():
 
 
 def test_py3():
-    return
     if sys.version_info[0] != 3:
         return
     value = Color('{red}this is a test.{/red}')
@@ -131,7 +131,7 @@ def test_py3():
 
     assert not Color('{red}var{/red}').isidentifier()
     assert not Color('var-').isidentifier()
-    assert Color('{red}var{/red}').isprintable()
+    assert not Color('{red}var{/red}').isprintable()
     assert not Color('{red}\0{/red}').isprintable()
 
     assert '\033[31mth3s 3s 1 t2st.\033[39m' == value.translate(Color.maketrans('aeiou', '12345'))

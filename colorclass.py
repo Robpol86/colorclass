@@ -209,6 +209,33 @@ class Color(PARENT_CLASS):
     def __len__(self):
         return self.value_no_colors.__len__()
 
+    def capitalize(self):
+        split = _RE_SPLIT.split(self.value_colors)
+        for i in range(len(split)):
+            if _RE_SPLIT.match(split[i]):
+                continue
+            split[i] = PARENT_CLASS(split[i]).capitalize()
+        return Color().join(split)
+
+    def center(self, width, fillchar=None):
+        if fillchar is not None:
+            result = PARENT_CLASS(self.value_no_colors).center(width, fillchar)
+        else:
+            result = PARENT_CLASS(self.value_no_colors).center(width)
+        return result.replace(self.value_no_colors, self.value_colors)
+
+    def count(self, sub, start=None, end=None):
+        return PARENT_CLASS(self.value_no_colors).count(sub, start, end)
+
+    def endswith(self, suffix, start=None, end=None):
+        return PARENT_CLASS(self.value_no_colors).endswith(suffix, start, end)
+
+    def find(self, sub, start=None, end=None):
+        return PARENT_CLASS(self.value_no_colors).find(sub, start, end)
+
+    def index(self, sub, start=None, end=None):
+        return PARENT_CLASS(self.value_no_colors).index(sub, start, end)
+
     def translate(self, table):
         split = _RE_SPLIT.split(self.value_colors)
         for i in range(len(split)):

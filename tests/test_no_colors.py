@@ -48,6 +48,7 @@ def test_common():
 
     assert 'This is a test.' == value.capitalize()
     assert '  this is a test.   ' == value.center(20)
+    assert '@@this is a test.@@@' == value.center(20, '@')
     assert 2 == value.count('is')
     assert value.endswith('test.')
     assert '    class' == Color('\tclass').expandtabs(4)
