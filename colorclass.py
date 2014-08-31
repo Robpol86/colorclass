@@ -5,6 +5,7 @@ https://pypi.python.org/pypi/colorclass
 """
 
 from collections import Mapping
+import re
 import sys
 
 __author__ = '@Robpol86'
@@ -41,6 +42,8 @@ _BASE_CODES = {
     '/autogreen': 39, '/autocyan': 39,
 }
 _LIGHT_BACKGROUND = False
+_RE_GROUP_SEARCH = re.compile(r'(?:\033\[\d+m)+')
+_RE_NUMBER_SEARCH = re.compile(r'\033\[(\d+)m')
 
 
 class _AutoCodes(Mapping):
@@ -122,7 +125,7 @@ def _pad_input(incoming):
     incoming_expanded = incoming.replace('{', '{{').replace('}', '}}')
     for key in _BASE_CODES:
         before, after = '{{%s}}' % key, '{%s}' % key
-        if incoming_expanded.find(before):
+        if before in incoming_expanded:
             incoming_expanded = incoming_expanded.replace(before, after)
     return incoming_expanded
 
@@ -138,15 +141,25 @@ def _parse_input(incoming):
     Returns:
     2-item tuple. First item is the parsed output. Second item is a version of the input without any colors.
     """
-    codes = _AutoCodes()
-    no_color_codes = dict((k, u'') for k in codes)
-    color_codes = dict((k, v) for k, v in codes.items())
-    incoming_padded = _pad_input(incoming)
+    codes = dict((k, v) for k, v in _AutoCodes().items() if '{%s}' % k in incoming)
+    if not codes:
+        return incoming, incoming
 
-    output_no_colors = incoming_padded.format(**no_color_codes)
+    color_codes = dict((k, '\033[{0}m'.format(v)) for k, v in codes.items())
+    incoming_padded = _pad_input(incoming)
+    output_no_colors = incoming_padded.format(**dict((k, u'') for k in codes))
     output_colors = incoming_padded.format(**color_codes)
 
-    return output_colors, output_no_colors
+    # Simplify: '{b}{red}' -> '\033[1m\033[31m' -> '\033[1;31m'
+    groups = sorted(set(_RE_GROUP_SEARCH.findall(output_colors)), key=len, reverse=True)  # Get codes, grouped adjacent.
+    groups_simplified = [sorted(set(_RE_NUMBER_SEARCH.findall(i))) for i in groups]  # Sort/unique child codes.
+    groups_compiled = ['\033[{0}m'.format(';'.join(g)) for g in groups_simplified]  # Final codes.
+    assert len(groups_compiled) == len(groups)  # For testing.
+    output_colors_simplified = output_colors
+    for i in range(len(groups)):
+        output_colors_simplified = output_colors_simplified.replace(groups[i], groups_compiled[i])
+
+    return output_colors_simplified, output_no_colors
 
 
 def set_light_background():
@@ -181,9 +194,12 @@ class Color(unicode if sys.version_info[0] == 2 else str):
     For a list of codes, call: colorclass.list_tags()
     """
     def __new__(cls, *args, **kwargs):
+        parent_class = cls.__bases__[0]
+        value_markup = args[0] if args else parent_class('')
+        value_colors, value_no_colors = _parse_input(value_markup)
         if args:
-            value_markup = args[0]
-            value_colors, value_no_colors = _parse_input(value_markup)
             args = [value_no_colors] + list(args[1:])
 
-        return cls.__bases__[0].__new__(cls, *args, **kwargs)
+        obj = parent_class.__new__(cls, *args, **kwargs)
+        obj.value_markup, obj.value_colors, obj.value_no_colors = value_markup, value_colors, value_no_colors
+        return obj
