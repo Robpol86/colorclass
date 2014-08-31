@@ -2,7 +2,7 @@ import colorclass
 
 
 def test_auto_codes():
-    codes = colorclass.AutoCodes()
+    codes = colorclass._AutoCodes()
 
     key = '{autoblack}{autored}{autogreen}{autoyellow}{autoblue}{automagenta}{autocyan}{autowhite}'
     colorclass.set_light_background()
@@ -11,4 +11,4 @@ def test_auto_codes():
     colorclass.set_dark_background()
     assert '9091929394959697' == key.format(**codes)
 
-    assert len(colorclass.BASE_CODES) == len(codes)
+    assert len(colorclass._BASE_CODES) == len(codes)
