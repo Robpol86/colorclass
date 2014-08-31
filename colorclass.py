@@ -224,21 +224,17 @@ class Color(PARENT_CLASS):
             result = PARENT_CLASS(self.value_no_colors).center(width)
         return result.replace(self.value_no_colors, self.value_colors)
 
-    def count(self, sub, start=None, end=None):
-        if end is not None:
-            return PARENT_CLASS(self.value_no_colors).count(sub, start, end)
-        if start is not None:
-            return PARENT_CLASS(self.value_no_colors).count(sub, start)
-        return PARENT_CLASS(self.value_no_colors).count(sub)
+    def count(self, *args, **kwargs):
+        return PARENT_CLASS(self.value_no_colors).count(*args, **kwargs)
 
-    def endswith(self, suffix, start=None, end=None):
-        return PARENT_CLASS(self.value_no_colors).endswith(suffix, start, end)
+    def endswith(self, *args, **kwargs):
+        return PARENT_CLASS(self.value_no_colors).endswith(*args, **kwargs)
 
-    def find(self, sub, start=None, end=None):
-        return PARENT_CLASS(self.value_no_colors).find(sub, start, end)
+    def find(self, *args, **kwargs):
+        return PARENT_CLASS(self.value_no_colors).find(*args, **kwargs)
 
-    def index(self, sub, start=None, end=None):
-        return PARENT_CLASS(self.value_no_colors).index(sub, start, end)
+    def index(self, *args, **kwargs):
+        return PARENT_CLASS(self.value_no_colors).index(*args, **kwargs)
 
     def translate(self, table):
         split = _RE_SPLIT.split(self.value_colors)
