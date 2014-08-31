@@ -149,17 +149,17 @@ def _parse_input(incoming):
 
     color_codes = dict((k, '\033[{0}m'.format(v)) for k, v in codes.items())
     incoming_padded = _pad_input(incoming)
-    output_no_colors = incoming_padded.format(**dict((k, u'') for k in codes))
     output_colors = incoming_padded.format(**color_codes)
 
     # Simplify: '{b}{red}' -> '\033[1m\033[31m' -> '\033[1;31m'
     groups = sorted(set(_RE_GROUP_SEARCH.findall(output_colors)), key=len, reverse=True)  # Get codes, grouped adjacent.
-    groups_simplified = [sorted(set(_RE_NUMBER_SEARCH.findall(i))) for i in groups]  # Sort/unique child codes.
+    groups_simplified = [[x for n in _RE_NUMBER_SEARCH.findall(i) for x in n.split(';')] for i in groups]
     groups_compiled = ['\033[{0}m'.format(';'.join(g)) for g in groups_simplified]  # Final codes.
     assert len(groups_compiled) == len(groups)  # For testing.
     output_colors_simplified = output_colors
     for i in range(len(groups)):
         output_colors_simplified = output_colors_simplified.replace(groups[i], groups_compiled[i])
+    output_no_colors = _RE_SPLIT.sub('', output_colors_simplified)
 
     return output_colors_simplified, output_no_colors
 
@@ -202,9 +202,12 @@ class Color(PARENT_CLASS):
             args = [value_colors] + list(args[1:])
 
         obj = parent_class.__new__(cls, *args, **kwargs)
-        obj.value_markup, obj.value_colors, obj.value_no_colors = value_markup, value_colors, value_no_colors
+        obj.value_colors, obj.value_no_colors = value_colors, value_no_colors
         obj.has_colors = bool(_RE_NUMBER_SEARCH.match(value_colors))
         return obj
+
+    def __len__(self):
+        return self.value_no_colors.__len__()
 
     def translate(self, table):
         split = _RE_SPLIT.split(self.value_colors)

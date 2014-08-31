@@ -16,7 +16,6 @@ def test_common():
 
     assert Color('{red}this is a test.{/red}') == value
     assert Color('\033[31mthis is a test.\033[39m') == value
-    assert Color('\033[31;42mtest\033[39;49m') == Color('{bggreen}{0}{/bggreen}').format()
     assert 15 == len(value)
     assert '\033[31mthis is a test.\033[39m' == '{0}'.format(value)
 
@@ -28,7 +27,7 @@ def test_common():
     assert '    \033[31mclass\033[39m' == Color('\t{red}class{/red}').expandtabs(4)
     assert 8 == value.find('a')
     assert 7 == Color('{red}I love m&ms{/red}').find('m')
-    assert '\033[31mtest 123\033[39m' == Color('{red}test {0}{/red}').format()
+    assert '\033[31mtest 123\033[39m' == Color('{red}test {0}{/red}').format('123')
     assert 8 == value.index('a')
     assert 7 == Color('{red}I love m&ms{/red}').index('m')
 

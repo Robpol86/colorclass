@@ -10,6 +10,34 @@ class Default(dict):
         return key
 
 
+def test_chaining():
+    value = Color('test')
+    value2 = Color('{0}').format(value)
+    assert 'test' == value2
+    assert 4 == len(value2)
+
+    value3 = Color('{0}').format(value2)
+    assert 'test' == value3
+    assert 4 == len(value3)
+
+    value4 = Color('{0}').format(value3)
+    assert 'test' == value4
+    assert 4 == len(value4)
+
+
+def test_format():
+    assert 'test' == '{0}'.format(Color('test'))
+    assert 'test' == Color('{0}').format(Color('test'))
+    assert 'test' == Color('{0}').format('test')
+
+    assert '_test' == Color.format(u'_{0}', 'test')
+    assert '_test' == Color.format(u'_{0}', Color('test'))
+
+    assert 'test' == '%s' % Color('test')
+    assert 'test' == Color('%s') % Color('test')
+    assert 'test' == Color('%s') % 'test'
+
+
 def test_common():
     value = Color('this is a test.')
 
