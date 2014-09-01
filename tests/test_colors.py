@@ -29,10 +29,11 @@ def test_format():
     assert '\033[31mtest\033[39m' == '{0}'.format(Color('{red}test{/red}'))
     assert '\033[31;31mtest\033[39;39m' == Color('{red}{0}{/red}').format(Color('{red}test{/red}'))
     assert '\033[31mtest\033[39m' == Color('{red}{0}{/red}').format('test')
-    return
 
     assert '\033[31mtest\033[39m' == '%s' % Color('{red}test{/red}')
-    assert '\033[31;31mtest\033[39;39m' == Color('{red}%s{/red}') % Color('{red}test{/red}')
+    value = Color('{red}%s{/red}') % Color('{red}test{/red}')
+    assert '\033[31m\033[31mtest\033[39m\033[39m' == value
+    assert '\033[31;31mtest\033[39;39m' == Color(value)
     assert '\033[31mtest\033[39m' == Color('{red}%s{/red}') % 'test'
 
 
