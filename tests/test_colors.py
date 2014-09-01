@@ -11,30 +11,25 @@ class Default(dict):
 
 
 def test_chaining():
-    return
     value = Color('{red}test{/red}')
     value2 = Color('{red}{0}{/red}').format(value)
-    assert '\033[31mtest\033[39m' == value2
+    assert '\033[31;31mtest\033[39;39m' == value2
     assert 4 == len(value2)
 
     value3 = Color('{red}{0}{/red}').format(value2)
-    assert '\033[31;31mtest\033[39;39m' == value3
+    assert '\033[31;31;31mtest\033[39;39;39m' == value3
     assert 4 == len(value3)
 
     value4 = Color('{red}{0}{/red}').format(value3)
-    assert '\033[31;31;31mtest\033[39;39;39m' == value4
+    assert '\033[31;31;31;31mtest\033[39;39;39;39m' == value4
     assert 4 == len(value4)
 
 
 def test_format():
     assert '\033[31mtest\033[39m' == '{0}'.format(Color('{red}test{/red}'))
-    return
     assert '\033[31;31mtest\033[39;39m' == Color('{red}{0}{/red}').format(Color('{red}test{/red}'))
     assert '\033[31mtest\033[39m' == Color('{red}{0}{/red}').format('test')
-
-    if '__pypy__' not in sys.builtin_module_names:
-        assert '\033[31m_\033[31mtest\033[39;39m' == Color.format(u'{red}_{0}{/red}', '{red}test{/red}')
-        assert '\033[31m_\033[31mtest\033[39;39m' == Color.format(u'{red}_{0}{/red}', Color('{red}test{/red}'))
+    return
 
     assert '\033[31mtest\033[39m' == '%s' % Color('{red}test{/red}')
     assert '\033[31;31mtest\033[39;39m' == Color('{red}%s{/red}') % Color('{red}test{/red}')

@@ -144,9 +144,6 @@ def _parse_input(incoming):
     2-item tuple. First item is the parsed output. Second item is a version of the input without any colors.
     """
     codes = dict((k, v) for k, v in _AutoCodes().items() if '{%s}' % k in incoming)
-    if not codes:
-        return incoming, incoming
-
     color_codes = dict((k, '\033[{0}m'.format(v)) for k, v in codes.items())
     incoming_padded = _pad_input(incoming)
     output_colors = incoming_padded.format(**color_codes)
@@ -232,6 +229,9 @@ class Color(PARENT_CLASS):
 
     def find(self, *args, **kwargs):
         return PARENT_CLASS(self.value_no_colors).find(*args, **kwargs)
+
+    def format(*args, **kwargs):
+        return Color(super(Color, args[0]).format(*args[1:], **kwargs))
 
     def index(self, *args, **kwargs):
         return PARENT_CLASS(self.value_no_colors).index(*args, **kwargs)

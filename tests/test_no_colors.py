@@ -30,10 +30,6 @@ def test_format():
     assert 'test' == Color('{0}').format(Color('test'))
     assert 'test' == Color('{0}').format('test')
 
-    if '__pypy__' not in sys.builtin_module_names:
-        assert '_test' == Color.format(u'_{0}', 'test')
-        assert '_test' == Color.format(u'_{0}', Color('test'))
-
     assert 'test' == '%s' % Color('test')
     assert 'test' == Color('%s') % Color('test')
     assert 'test' == Color('%s') % 'test'
