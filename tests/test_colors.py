@@ -57,7 +57,6 @@ def test_common():
     assert '\033[31mtest 123\033[39m' == Color('{red}test {0}{/red}').format('123')
     assert 8 == value.index('a')
     assert 7 == Color('{red}I love m&ms{/red}').index('m')
-    return
 
     assert Color('{red}a1{/red}').isalnum()
     assert not Color('{red}a1.{/red}').isalnum()
@@ -100,6 +99,7 @@ def test_common():
     assert '\033[31mAa\033[39m' == Color('{red}aA{/red}').swapcase()
     assert '\033[31mThis Is A Test.\033[39m' == value.title()
     assert '\033[31mTHIS IS A TEST.\033[39m' == value.upper()
+    return
     assert '\033[31m000001\033[39m' == Color('{red}1{/red}').zfill(6)
 
 

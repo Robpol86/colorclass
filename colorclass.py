@@ -236,10 +236,81 @@ class Color(PARENT_CLASS):
     def index(self, *args, **kwargs):
         return PARENT_CLASS(self.value_no_colors).index(*args, **kwargs)
 
+    def isalnum(self):
+        return PARENT_CLASS(self.value_no_colors).isalnum()
+
+    def isalpha(self):
+        return PARENT_CLASS(self.value_no_colors).isalpha()
+
+    def isdecimal(self):
+        return PARENT_CLASS(self.value_no_colors).isdecimal()
+
+    def isdigit(self):
+        return PARENT_CLASS(self.value_no_colors).isdigit()
+
+    def isnumeric(self):
+        return PARENT_CLASS(self.value_no_colors).isnumeric()
+
+    def isspace(self):
+        return PARENT_CLASS(self.value_no_colors).isspace()
+
+    def istitle(self):
+        return PARENT_CLASS(self.value_no_colors).istitle()
+
+    def isupper(self):
+        return PARENT_CLASS(self.value_no_colors).isupper()
+
+    def ljust(self, width, fillchar=None):
+        if fillchar is not None:
+            result = PARENT_CLASS(self.value_no_colors).ljust(width, fillchar)
+        else:
+            result = PARENT_CLASS(self.value_no_colors).ljust(width)
+        return result.replace(self.value_no_colors, self.value_colors)
+
+    def rfind(self, *args, **kwargs):
+        return PARENT_CLASS(self.value_no_colors).rfind(*args, **kwargs)
+
+    def rindex(self, *args, **kwargs):
+        return PARENT_CLASS(self.value_no_colors).rindex(*args, **kwargs)
+
+    def rjust(self, width, fillchar=None):
+        if fillchar is not None:
+            result = PARENT_CLASS(self.value_no_colors).rjust(width, fillchar)
+        else:
+            result = PARENT_CLASS(self.value_no_colors).rjust(width)
+        return result.replace(self.value_no_colors, self.value_colors)
+
+    def startswith(self, *args, **kwargs):
+        return PARENT_CLASS(self.value_no_colors).startswith(*args, **kwargs)
+
+    def swapcase(self):
+        split = _RE_SPLIT.split(self.value_colors)
+        for i in range(len(split)):
+            if _RE_SPLIT.match(split[i]):
+                continue
+            split[i] = PARENT_CLASS(split[i]).swapcase()
+        return Color().join(split)
+
+    def title(self):
+        split = _RE_SPLIT.split(self.value_colors)
+        for i in range(len(split)):
+            if _RE_SPLIT.match(split[i]):
+                continue
+            split[i] = PARENT_CLASS(split[i]).title()
+        return Color().join(split)
+
     def translate(self, table):
         split = _RE_SPLIT.split(self.value_colors)
         for i in range(len(split)):
             if _RE_SPLIT.match(split[i]):
                 continue
             split[i] = PARENT_CLASS(split[i]).translate(table)
+        return Color().join(split)
+
+    def upper(self):
+        split = _RE_SPLIT.split(self.value_colors)
+        for i in range(len(split)):
+            if _RE_SPLIT.match(split[i]):
+                continue
+            split[i] = PARENT_CLASS(split[i]).upper()
         return Color().join(split)
