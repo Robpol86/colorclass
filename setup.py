@@ -25,13 +25,16 @@ def get_metadata(main_file):
     """
     with open(os.path.join(HERE, 'README.md'), encoding='utf-8') as f:
         long_description = f.read()
+    description = [l.strip() for l in long_description.splitlines() if l.strip() and not l.strip().startswith('#')][0]
+    name = [l.strip() for l in long_description.splitlines() if l.strip().startswith('#')][0].split(' ', 1)[1]
 
     with open(os.path.join(HERE, main_file), encoding='utf-8') as f:
         lines = [l.strip() for l in f if l.startswith('__')]
     metadata = ast.literal_eval("{'" + ", '".join([l.replace(' = ', "': ") for l in lines]) + '}')
     __author__, __license__, __version__ = [metadata[k] for k in ('__author__', '__license__', '__version__')]
 
-    everything = dict(version=__version__, long_description=long_description, author=__author__, license=__license__)
+    everything = dict(version=__version__, long_description=long_description, author=__author__, license=__license__,
+                      description=description, name=name,)
     if not all(everything.values()):
         raise ValueError('Failed to obtain metadata from package/module.')
 
@@ -84,15 +87,12 @@ class CmdLint(CmdFlake):
     CMD_ARGS = ['pylint', '--max-line-length', '120', 'colorclass.py']
 
 
-# Setup definition.
-setuptools.setup(
-    name='colorclass',
-    description='Yet another ANSI color text library for Python.',
+ALL_DATA = dict(
     url='https://github.com/Robpol86/colorclass',
     author_email='robpol86@gmail.com',
 
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
         'Environment :: MacOS X',
         'Intended Audience :: Developers',
@@ -119,3 +119,7 @@ setuptools.setup(
     # Pass the rest from get_metadata().
     **get_metadata(os.path.join('colorclass.py'))
 )
+
+
+if __name__ == '__main__':
+    setuptools.setup(**ALL_DATA)
