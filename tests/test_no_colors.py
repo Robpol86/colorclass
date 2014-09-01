@@ -91,6 +91,7 @@ def test_common():
     assert 'This Is A Test.' == value.title()
     assert 'THIS IS A TEST.' == value.upper()
     assert '000001' == Color('1').zfill(6)
+    assert '000000' == Color().zfill(6)
 
 
 def test_py2():

@@ -314,3 +314,20 @@ class Color(PARENT_CLASS):
                 continue
             split[i] = PARENT_CLASS(split[i]).upper()
         return Color().join(split)
+
+    def zfill(self, width):
+        if not self.value_no_colors:
+            return PARENT_CLASS().zfill(width)
+
+        split = _RE_SPLIT.split(self.value_colors)
+        filled = PARENT_CLASS(self.value_no_colors).zfill(width)
+        if len(split) == 1:
+            return filled
+
+        padding = filled.replace(self.value_no_colors, '')
+        if not split[0]:
+            split[2] = padding + split[2]
+        else:
+            split[0] = padding + split[0]
+
+        return Color().join(split)

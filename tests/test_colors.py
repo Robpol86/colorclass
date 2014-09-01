@@ -99,8 +99,8 @@ def test_common():
     assert '\033[31mAa\033[39m' == Color('{red}aA{/red}').swapcase()
     assert '\033[31mThis Is A Test.\033[39m' == value.title()
     assert '\033[31mTHIS IS A TEST.\033[39m' == value.upper()
-    return
     assert '\033[31m000001\033[39m' == Color('{red}1{/red}').zfill(6)
+    assert '00001\033[31m1\033[39m' == Color('1{red}1{/red}').zfill(6)
 
 
 def test_py2():
