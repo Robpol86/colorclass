@@ -2,7 +2,21 @@
 
 Yet another ANSI color text library for Python. Provides "auto colors" for dark/light terminals.
 
-In Python2.x this library subclasses `unicode`, while on Python3.x it subclasses `str`.
+In Python2.x this library subclasses `unicode`, while on Python3.x it subclasses `str`. `colorclass` is supported on
+Python 2.6, 2.7, 3.3, and 3.4.
+
+[![Build Status](https://travis-ci.org/Robpol86/colorclass.svg?branch=master)]
+(https://travis-ci.org/Robpol86/colorclass)
+[![Coverage Status](https://img.shields.io/coveralls/Robpol86/colorclass.svg)]
+(https://coveralls.io/r/Robpol86/colorclass)
+[![Latest Version](https://pypip.in/version/colorclass/badge.png)]
+(https://pypi.python.org/pypi/colorclass/)
+[![Downloads](https://pypip.in/download/colorclass/badge.png)]
+(https://pypi.python.org/pypi/colorclass/)
+[![Download format](https://pypip.in/format/colorclass/badge.png)]
+(https://pypi.python.org/pypi/colorclass/)
+[![License](https://pypip.in/license/colorclass/badge.png)]
+(https://pypi.python.org/pypi/colorclass/)
 
 ## Example Implementation
 
