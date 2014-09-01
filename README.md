@@ -18,6 +18,13 @@ Python 2.6, 2.7, 3.3, and 3.4.
 [![License](https://pypip.in/license/colorclass/badge.png)]
 (https://pypi.python.org/pypi/colorclass/)
 
+## Quickstart
+
+Install:
+```bash
+pip install colorclass
+```
+
 ## Example Implementation
 
 ![Example Script Screenshot](/example.png?raw=true "Example Script Screenshot")
@@ -65,3 +72,9 @@ color_string.value_colors
 color_string.value_no_colors
 'Test'
 ```
+
+## Changelog
+
+#### 1.0.0
+
+* Initial release.
