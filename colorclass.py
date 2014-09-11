@@ -1,4 +1,4 @@
-"""Yet another ANSI color text library for Python. Provides "auto colors" for dark/light terminals.
+"""Unicode class with automatic (light/dark background) terminal colors support.
 
 https://github.com/Robpol86/colorclass
 https://pypi.python.org/pypi/colorclass
@@ -56,23 +56,24 @@ class _AutoCodes(Mapping):
 
     def __getitem__(self, item):
         if item == 'autoblack':
-            return self.autoblack
+            answer = self.autoblack
         elif item == 'autored':
-            return self.autored
+            answer = self.autored
         elif item == 'autogreen':
-            return self.autogreen
+            answer = self.autogreen
         elif item == 'autoyellow':
-            return self.autoyellow
+            answer = self.autoyellow
         elif item == 'autoblue':
-            return self.autoblue
+            answer = self.autoblue
         elif item == 'automagenta':
-            return self.automagenta
+            answer = self.automagenta
         elif item == 'autocyan':
-            return self.autocyan
+            answer = self.autocyan
         elif item == 'autowhite':
-            return self.autowhite
+            answer = self.autowhite
         else:
-            return self.__dict[item]
+            answer = self.__dict[item]
+        return answer
 
     def __iter__(self):
         return iter(self.__dict)
@@ -82,34 +83,42 @@ class _AutoCodes(Mapping):
 
     @property
     def autoblack(self):
+        """Returns automatic black foreground color depending on background color."""
         return self.__dict['black' if _AutoCodes.LIGHT_BACKGROUND else 'hiblack']
 
     @property
     def autored(self):
+        """Returns automatic red foreground color depending on background color."""
         return self.__dict['red' if _AutoCodes.LIGHT_BACKGROUND else 'hired']
 
     @property
     def autogreen(self):
+        """Returns automatic green foreground color depending on background color."""
         return self.__dict['green' if _AutoCodes.LIGHT_BACKGROUND else 'higreen']
 
     @property
     def autoyellow(self):
+        """Returns automatic yellow foreground color depending on background color."""
         return self.__dict['yellow' if _AutoCodes.LIGHT_BACKGROUND else 'hiyellow']
 
     @property
     def autoblue(self):
+        """Returns automatic blue foreground color depending on background color."""
         return self.__dict['blue' if _AutoCodes.LIGHT_BACKGROUND else 'hiblue']
 
     @property
     def automagenta(self):
+        """Returns automatic magenta foreground color depending on background color."""
         return self.__dict['magenta' if _AutoCodes.LIGHT_BACKGROUND else 'himagenta']
 
     @property
     def autocyan(self):
+        """Returns automatic cyan foreground color depending on background color."""
         return self.__dict['cyan' if _AutoCodes.LIGHT_BACKGROUND else 'hicyan']
 
     @property
     def autowhite(self):
+        """Returns automatic white foreground color depending on background color."""
         return self.__dict['white' if _AutoCodes.LIGHT_BACKGROUND else 'hiwhite']
 
 
