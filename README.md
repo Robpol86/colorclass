@@ -75,6 +75,10 @@ color_string.value_no_colors
 
 ## Changelog
 
+#### 1.0.1
+
+* Fixed splitlines() method.
+
 #### 1.0.0
 
 * Initial release.

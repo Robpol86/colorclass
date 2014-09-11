@@ -92,7 +92,11 @@ def test_common():
     assert ' \033[31ma\033[39m' == Color(' {red}a{/red} ').rstrip()
     assert '\033[31m a \033[39m' == Color('{red} a {/red}').rstrip()
     assert ['\033[31mthis', 'is', 'a', 'test.\033[39m'] == value.split(' ')
-    assert ['\033[31ma\033[39m', '\033[32ma\033[39m'] == Color('{red}a{/red}\n{green}a{/green}').splitlines()
+
+    values = Color('{red}a{/red}\n{green}a{/green}').splitlines()
+    assert ['\033[31ma\033[39m', '\033[32ma\033[39m'] == values
+    assert [1, 1] == [len(i) for i in values]
+
     assert value.startswith('this')
     assert '\033[31ma\033[39m' == Color(' {red}a{/red} ').strip()
     assert '\033[31m a \033[39m' == Color('{red} a {/red}').strip()

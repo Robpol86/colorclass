@@ -85,6 +85,7 @@ def test_common():
     assert ' a' == Color(' a ').rstrip()
     assert ['this', 'is', 'a', 'test.'] == value.split(' ')
     assert ['a', 'a'] == Color('a\na').splitlines()
+    assert [1, 1] == [len(i) for i in Color('a\na').splitlines()]
     assert value.startswith('this')
     assert 'a' == Color(' a ').strip()
     assert 'Aa' == Color('aA').swapcase()
