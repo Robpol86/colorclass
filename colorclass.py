@@ -10,7 +10,7 @@ import sys
 
 __author__ = '@Robpol86'
 __license__ = 'MIT'
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 _BASE_CODES = {
     '/all': 0, 'b': 1, 'f': 2, 'i': 3, 'u': 4, 'flash': 5, 'outline': 6, 'negative': 7, 'invis': 8, 'strike': 9,
     '/b': 22, '/f': 22, '/i': 23, '/u': 24, '/flash': 25, '/outline': 26, '/negative': 27, '/invis': 28,
@@ -49,6 +49,7 @@ PARENT_CLASS = unicode if sys.version_info[0] == 2 else str
 
 class _AutoCodes(Mapping):
     """Read-only subclass of dict, resolves closing tags (based on colorclass.CODES) and automatic colors."""
+    DISABLE_COLORS = False
     LIGHT_BACKGROUND = False
 
     def __init__(self):
@@ -153,7 +154,7 @@ def _parse_input(incoming):
     2-item tuple. First item is the parsed output. Second item is a version of the input without any colors.
     """
     codes = dict((k, v) for k, v in _AutoCodes().items() if '{%s}' % k in incoming)
-    color_codes = dict((k, '\033[{0}m'.format(v)) for k, v in codes.items())
+    color_codes = dict((k, '' if _AutoCodes.DISABLE_COLORS else '\033[{0}m'.format(v)) for k, v in codes.items())
     incoming_padded = _pad_input(incoming)
     output_colors = incoming_padded.format(**color_codes)
 
@@ -167,16 +168,27 @@ def _parse_input(incoming):
         output_colors_simplified = output_colors_simplified.replace(groups[i], groups_compiled[i])
     output_no_colors = _RE_SPLIT.sub('', output_colors_simplified)
 
+    # Strip any remaining color codes.
+    if _AutoCodes.DISABLE_COLORS:
+        output_colors_simplified = _RE_NUMBER_SEARCH.sub('', output_colors_simplified)
+
     return output_colors_simplified, output_no_colors
+
+
+def disable_all_colors():
+    """Disable all colors. Strips any color tags or codes."""
+    _AutoCodes.DISABLE_COLORS = True
 
 
 def set_light_background():
     """Chooses dark colors for all 'auto'-prefixed codes for readability on light backgrounds."""
+    _AutoCodes.DISABLE_COLORS = False
     _AutoCodes.LIGHT_BACKGROUND = True
 
 
 def set_dark_background():
     """Chooses dark colors for all 'auto'-prefixed codes for readability on light backgrounds."""
+    _AutoCodes.DISABLE_COLORS = False
     _AutoCodes.LIGHT_BACKGROUND = False
 
 
