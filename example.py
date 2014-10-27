@@ -20,7 +20,7 @@ OPTIONS = docopt(__doc__) if __name__ == '__main__' else dict()
 
 
 def main():
-    if OPTIONS['--light-bg']:
+    if OPTIONS.get('--light-bg'):
         set_light_background()
 
     print('Autocolors for all backgrounds:')
