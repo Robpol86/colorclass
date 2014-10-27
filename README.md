@@ -5,7 +5,7 @@ Yet another ANSI color text library for Python. Provides "auto colors" for dark/
 In Python2.x this library subclasses `unicode`, while on Python3.x it subclasses `str`. `colorclass` is supported on
 Python 2.6, 2.7, 3.3, and 3.4.
 
-Windows support effortlessly provided with the help of [colorama](https://github.com/tartley/colorama). I didn't have to
+Windows support effortlessly provided with the help of [colorama](https://github.com/tartley/colorama/). I didn't have to
 change anything! Though only dark colors seem to work.
 
 [![Build Status](https://travis-ci.org/Robpol86/colorclass.svg?branch=master)]
