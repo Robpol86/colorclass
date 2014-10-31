@@ -1,4 +1,8 @@
-"""Unicode class with automatic (light/dark background) terminal colors support.
+"""Colorful worry-free console applications for Linux, Mac OSX, and Windows.
+
+Supported natively on Linux and Mac OSX (Just Works), and on Windows it works the same if Windows.enable() is called.
+
+Gives you expected and sane results from methods like len() and .capitalize().
 
 https://github.com/Robpol86/colorclass
 https://pypi.python.org/pypi/colorclass
@@ -14,7 +18,7 @@ import struct
 
 __author__ = '@Robpol86'
 __license__ = 'MIT'
-__version__ = '1.0.2'
+__version__ = '1.1.0'
 _BASE_CODES = {
     '/all': 0, 'b': 1, 'f': 2, 'i': 3, 'u': 4, 'flash': 5, 'outline': 6, 'negative': 7, 'invis': 8, 'strike': 9,
     '/b': 22, '/f': 22, '/i': 23, '/u': 24, '/flash': 25, '/outline': 26, '/negative': 27, '/invis': 28,
@@ -383,8 +387,17 @@ class Color(PARENT_CLASS):
 
 
 class Windows(object):
+    """Enable and disable Windows support for ANSI color character codes.
+
+    Call static method Windows.enable() to enable color support for the remainder of the process' lifetime.
+
+    This class is also context-aware. You can do this:
+    with Windows():
+        print(Color('{autored}Test{/autored}'))
+    """
     @staticmethod
     def disable():
+        """Restore sys.stderr and sys.stdout to their original objects. Resets colors to their original values."""
         if os.name == 'nt':
             getattr(sys.stderr, '_reset_colors', lambda: False)()
             getattr(sys.stdout, '_reset_colors', lambda: False)()
@@ -393,10 +406,19 @@ class Windows(object):
 
     @staticmethod
     def is_enabled():
+        """Returns True if either stderr or stdout has colors enabled."""
         return id(sys.stderr) != id(sys.__stderr__) or id(sys.stdout) != id(sys.__stdout__)
 
     @staticmethod
     def enable(auto_colors=False, reset_atexit=False):
+        """Enables color text with print() or sys.stdout.write() (stderr too).
+
+        Keyword arguments:
+        auto_colors -- automatically selects dark or light colors based on current terminal's background color. Only
+            works with {autored} and related tags.
+        reset_atexit -- resets original colors upon Python exit (in case you forget to reset it yourself with a closing
+            tag).
+        """
         # Verify and flush.
         if os.name != 'nt':
             return False
@@ -444,12 +466,22 @@ class _WindowsStream(object):
         http://stackoverflow.com/questions/287871/print-in-terminal-with-colors-using-python
         http://msdn.microsoft.com/en-us/library/windows/desktop/ms682088#_win32_character_attributes
 
-    TODO
+    Class variables:
+    ALL_BG_CODES -- list of background Windows codes. Used to determine if requested color is foreground or background.
+    COMPILED_CODES -- 'translation' dictionary. Keys are ANSI codes (values of _BASE_CODES), values are Windows codes.
+    STD_ERROR_HANDLE -- http://msdn.microsoft.com/en-us/library/windows/desktop/ms683231
+    STD_OUTPUT_HANDLE -- http://msdn.microsoft.com/en-us/library/windows/desktop/ms683231
+
+    Instance variables:
+    original_stream -- the original stream to write non-code text to.
+    win32_stream -- handle to the Windows stderr or stdout device. Used by other Windows functions.
+    default_fg -- the foreground Windows color code at the time of instantiation.
+    default_bg -- the background Windows color code at the time of instantiation.
     """
 
     ALL_BG_CODES = [v for k, v in _WINDOWS_CODES.items() if k.startswith('bg') or k.startswith('hibg')]
     COMPILED_CODES = dict((v, _WINDOWS_CODES[k]) for k, v in _BASE_CODES.items() if k in _WINDOWS_CODES)
-    STD_ERROR_HANDLE = -12  # http://msdn.microsoft.com/en-us/library/windows/desktop/ms683231
+    STD_ERROR_HANDLE = -12
     STD_OUTPUT_HANDLE = -11
 
     def __init__(self, stderr=False):
@@ -459,6 +491,10 @@ class _WindowsStream(object):
         self.default_fg, self.default_bg = self._get_colors()
 
     def __getattr__(self, item):
+        """If an attribute/function/etc is not defined in this function, retrieve the one from the original stream.
+
+        Fixes ipython arrow key presses.
+        """
         return getattr(self.original_stream, item)
 
     def _get_colors(self):
@@ -474,13 +510,17 @@ class _WindowsStream(object):
         self._set_color(self.default_fg | self.default_bg)
 
     def _set_color(self, color_code):
-        """Changes the foreground and background colors for the next character(s) to be printed to the console.
+        """Changes the foreground and background colors for subsequently printed characters.
 
         Since setting a color requires including both foreground and background codes (merged), setting just the
         foreground color resets the background color to black, and vice versa.
 
         This function first gets the current background and foreground colors, merges in the requested color code, and
         sets the result.
+
+        However if we need to remove just the foreground color but leave the background color the same (or vice versa)
+        such as when {/red} is used, we must merge the default foreground color with the current background color. This
+        is the reason for those negative values.
 
         Positional arguments:
         color_code -- integer color code from _WINDOWS_CODES.
