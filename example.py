@@ -20,7 +20,7 @@ OPTIONS = docopt(__doc__) if __name__ == '__main__' else dict()
 
 
 def main():
-    Windows.enable()  # Does nothing if not running on Windows.
+    Windows.enable(auto_colors=True, reset_atexit=True)  # Does nothing if not running on Windows.
 
     if OPTIONS.get('--light-bg'):
         set_light_background()

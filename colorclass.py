@@ -4,11 +4,13 @@ https://github.com/Robpol86/colorclass
 https://pypi.python.org/pypi/colorclass
 """
 
+import atexit
 from collections import Mapping
 import ctypes
 import os
 import re
 import sys
+import struct
 
 __author__ = '@Robpol86'
 __license__ = 'MIT'
@@ -44,19 +46,25 @@ _BASE_CODES = {
     '/autogreen': 39, '/autocyan': 39,
 }
 _WINDOWS_CODES = {
-    '/all': 7,
+    '/all': -33, '/fg': -39, '/bg': -49,
 
     'black': 0, 'red': 4, 'green': 2, 'yellow': 6, 'blue': 1, 'magenta': 5, 'cyan': 3, 'white': 7,
 
-    'bgred': 64, 'bggreen': 32, 'bgblue': 16,
+    'bgblack': -8, 'bgred': 64, 'bggreen': 32, 'bgyellow': 96, 'bgblue': 16, 'bgmagenta': 80, 'bgcyan': 48,
+    'bgwhite': 112,
 
     'hiblack': 8, 'hired': 12, 'higreen': 10, 'hiyellow': 14, 'hiblue': 9, 'himagenta': 13, 'hicyan': 11, 'hiwhite': 15,
 
-    '/black': 7, '/red': 7, '/green': 7, '/yellow': 7, '/blue': 7, '/magenta': 7, '/cyan': 7, '/white': 7,
-    '/hiblack': 7, '/hired': 7, '/higreen': 7, '/hiyellow': 7, '/hiblue': 7, '/himagenta': 7, '/hicyan': 7,
-    '/hiwhite': 7,
+    'hibgblack': 128, 'hibgred': 192, 'hibggreen': 160, 'hibgyellow': 224, 'hibgblue': 144, 'hibgmagenta': 208,
+    'hibgcyan': 176, 'hibgwhite': 240,
 
-    '/bgred': 7, '/bggreen': 7, '/bgblue': 7,
+    '/black': -39, '/red': -39, '/green': -39, '/yellow': -39, '/blue': -39, '/magenta': -39, '/cyan': -39,
+    '/white': -39, '/hiblack': -39, '/hired': -39, '/higreen': -39, '/hiyellow': -39, '/hiblue': -39, '/himagenta': -39,
+    '/hicyan': -39, '/hiwhite': -39,
+
+    '/bgblack': -49, '/bgred': -49, '/bggreen': -49, '/bgyellow': -49, '/bgblue': -49, '/bgmagenta': -49,
+    '/bgcyan': -49, '/bgwhite': -49, '/hibgblack': -49, '/hibgred': -49, '/hibggreen': -49, '/hibgyellow': -49,
+    '/hibgblue': -49, '/hibgmagenta': -49, '/hibgcyan': -49, '/hibgwhite': -49,
 }
 _RE_GROUP_SEARCH = re.compile(r'(?:\033\[[\d;]+m)+')
 _RE_NUMBER_SEARCH = re.compile(r'\033\[([\d;]+)m')
@@ -377,6 +385,9 @@ class Color(PARENT_CLASS):
 class Windows(object):
     @staticmethod
     def disable():
+        if os.name == 'nt':
+            getattr(sys.stderr, '_reset_colors', lambda: False)()
+            getattr(sys.stdout, '_reset_colors', lambda: False)()
         sys.stderr = sys.__stderr__
         sys.stdout = sys.__stdout__
 
@@ -385,7 +396,7 @@ class Windows(object):
         return id(sys.stderr) != id(sys.__stderr__) or id(sys.stdout) != id(sys.__stdout__)
 
     @staticmethod
-    def enable():
+    def enable(auto_colors=False, reset_atexit=False):
         # Verify and flush.
         if os.name != 'nt':
             return False
@@ -402,6 +413,15 @@ class Windows(object):
         if hasattr(sys.stdout, 'isatty') and sys.stdout.isatty():
             sys.stdout = _WindowsStream(stderr=False)
 
+        # Automatically select which colors to display.
+        bg_color = getattr(sys.stdout, 'default_bg', getattr(sys.stderr, 'default_bg', None))
+        if auto_colors and bg_color is not None:
+            set_light_background() if bg_color in (112, 96, 48, 240, 176, 224) else set_dark_background()
+
+        # Reset on exit if requested.
+        if reset_atexit:
+            atexit.register(lambda: Windows.disable())
+
         return True  # One or both streams are TTYs.
 
     def __enter__(self):
@@ -415,15 +435,19 @@ class _WindowsStream(object):
     """Replacement stream (overwrites sys.stdout and sys.stderr). When writing or printing, ANSI codes are converted.
 
     ANSI (Linux/Unix) color codes are converted into win32 system calls, changing the next character's color before
-    printing it. Inspired by:
+    printing it. Resources referenced:
         https://github.com/tartley/colorama
+        http://www.cplusplus.com/articles/2ywTURfi/
         http://thomasfischer.biz/python-and-windows-terminal-colors/
         http://stackoverflow.com/questions/17125440/c-win32-console-color
+        http://www.tysos.org/svn/trunk/mono/corlib/System/WindowsConsoleDriver.cs
         http://stackoverflow.com/questions/287871/print-in-terminal-with-colors-using-python
+        http://msdn.microsoft.com/en-us/library/windows/desktop/ms682088#_win32_character_attributes
 
     TODO
     """
 
+    ALL_BG_CODES = [v for k, v in _WINDOWS_CODES.items() if k.startswith('bg') or k.startswith('hibg')]
     COMPILED_CODES = dict((v, _WINDOWS_CODES[k]) for k, v in _BASE_CODES.items() if k in _WINDOWS_CODES)
     STD_ERROR_HANDLE = -12  # http://msdn.microsoft.com/en-us/library/windows/desktop/ms683231
     STD_OUTPUT_HANDLE = -11
@@ -432,13 +456,53 @@ class _WindowsStream(object):
         self.original_stream = sys.__stderr__ if stderr else sys.__stdout__
         std_handle = self.STD_ERROR_HANDLE if stderr else self.STD_OUTPUT_HANDLE
         self.win32_stream = ctypes.windll.kernel32.GetStdHandle(std_handle)
-        ctypes.windll.kernel32.GetConsoleScreenBufferInfo(self.win32_stream, ctypes.create_string_buffer(22))
+        self.default_fg, self.default_bg = self._get_colors()
 
     def __getattr__(self, item):
         return getattr(self.original_stream, item)
 
+    def _get_colors(self):
+        """Returns a tuple of two integers representing current colors: (foreground, background)."""
+        console_screen_buffer_info = ctypes.create_string_buffer(22)
+        ctypes.windll.kernel32.GetConsoleScreenBufferInfo(self.win32_stream, console_screen_buffer_info)
+        w_attributes = struct.unpack('hhhhHhhhhhh', console_screen_buffer_info.raw)[4]
+        current_fg, current_bg = w_attributes % 16, w_attributes & 240
+        return current_fg, current_bg
+
+    def _reset_colors(self):
+        """Sets the foreground and background colors to their original values (when class was instantiated)."""
+        self._set_color(self.default_fg | self.default_bg)
+
     def _set_color(self, color_code):
-        ctypes.windll.kernel32.SetConsoleTextAttribute(self.win32_stream, color_code)
+        """Changes the foreground and background colors for the next character(s) to be printed to the console.
+
+        Since setting a color requires including both foreground and background codes (merged), setting just the
+        foreground color resets the background color to black, and vice versa.
+
+        This function first gets the current background and foreground colors, merges in the requested color code, and
+        sets the result.
+
+        Positional arguments:
+        color_code -- integer color code from _WINDOWS_CODES.
+        """
+        # Get current color code.
+        current_fg, current_bg = self._get_colors()
+
+        # Handle special negative codes. Also determine the final color code.
+        if color_code == -39:
+            final_color_code = self.default_fg | current_bg  # Reset the foreground only.
+        elif color_code == -49:
+            final_color_code = current_fg | self.default_bg  # Reset the background only.
+        elif color_code == -33:
+            final_color_code = self.default_fg | self.default_bg  # Reset both.
+        elif color_code == -8:
+            final_color_code = current_fg  # Black background.
+        else:
+            new_is_bg = color_code in self.ALL_BG_CODES
+            final_color_code = color_code | (current_fg if new_is_bg else current_bg)
+
+        # Set new code.
+        ctypes.windll.kernel32.SetConsoleTextAttribute(self.win32_stream, final_color_code)
 
     def write(self, p_str):
         for segment in _RE_SPLIT.split(p_str):
