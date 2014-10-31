@@ -5,6 +5,8 @@ https://pypi.python.org/pypi/colorclass
 """
 
 from collections import Mapping
+import ctypes
+import os
 import re
 import sys
 
@@ -40,6 +42,21 @@ _BASE_CODES = {
 
     '/autored': 39, '/autoblack': 39, '/automagenta': 39, '/autowhite': 39, '/autoblue': 39, '/autoyellow': 39,
     '/autogreen': 39, '/autocyan': 39,
+}
+_WINDOWS_CODES = {
+    '/all': 7,
+
+    'black': 0, 'red': 4, 'green': 2, 'yellow': 6, 'blue': 1, 'magenta': 5, 'cyan': 3, 'white': 7,
+
+    'bgred': 64, 'bggreen': 32, 'bgblue': 16,
+
+    'hiblack': 8, 'hired': 12, 'higreen': 10, 'hiyellow': 14, 'hiblue': 9, 'himagenta': 13, 'hicyan': 11, 'hiwhite': 15,
+
+    '/black': 7, '/red': 7, '/green': 7, '/yellow': 7, '/blue': 7, '/magenta': 7, '/cyan': 7, '/white': 7,
+    '/hiblack': 7, '/hired': 7, '/higreen': 7, '/hiyellow': 7, '/hiblue': 7, '/himagenta': 7, '/hicyan': 7,
+    '/hiwhite': 7,
+
+    '/bgred': 7, '/bggreen': 7, '/bgblue': 7,
 }
 _RE_GROUP_SEARCH = re.compile(r'(?:\033\[[\d;]+m)+')
 _RE_NUMBER_SEARCH = re.compile(r'\033\[([\d;]+)m')
@@ -355,3 +372,84 @@ class Color(PARENT_CLASS):
             split[0] = padding + split[0]
 
         return Color().join(split)
+
+
+class Windows(object):
+    @staticmethod
+    def disable():
+        sys.stderr = sys.__stderr__
+        sys.stdout = sys.__stdout__
+
+    @staticmethod
+    def is_enabled():
+        return id(sys.stderr) != id(sys.__stderr__) or id(sys.stdout) != id(sys.__stdout__)
+
+    @staticmethod
+    def enable():
+        # Verify and flush.
+        if os.name != 'nt':
+            return False
+        if Windows.is_enabled():
+            return False
+        if not any(hasattr(s, 'isatty') and s.isatty() for s in (sys.stderr, sys.stdout)):
+            return False  # Both streams are not TTYs.
+        sys.__stderr__.flush()
+        sys.__stdout__.flush()
+
+        # Overwrite stream references.
+        if hasattr(sys.stderr, 'isatty') and sys.stderr.isatty():
+            sys.stderr = _WindowsStream(stderr=True)
+        if hasattr(sys.stdout, 'isatty') and sys.stdout.isatty():
+            sys.stdout = _WindowsStream(stderr=False)
+
+        return True  # One or both streams are TTYs.
+
+    def __enter__(self):
+        Windows.enable()
+
+    def __exit__(self, *_):
+        Windows.disable()
+
+
+class _WindowsStream(object):
+    """Replacement stream (overwrites sys.stdout and sys.stderr). When writing or printing, ANSI codes are converted.
+
+    ANSI (Linux/Unix) color codes are converted into win32 system calls, changing the next character's color before
+    printing it. Inspired by:
+        https://github.com/tartley/colorama
+        http://thomasfischer.biz/python-and-windows-terminal-colors/
+        http://stackoverflow.com/questions/17125440/c-win32-console-color
+        http://stackoverflow.com/questions/287871/print-in-terminal-with-colors-using-python
+
+    TODO
+    """
+
+    COMPILED_CODES = dict((v, _WINDOWS_CODES[k]) for k, v in _BASE_CODES.items() if k in _WINDOWS_CODES)
+    STD_ERROR_HANDLE = -12  # http://msdn.microsoft.com/en-us/library/windows/desktop/ms683231
+    STD_OUTPUT_HANDLE = -11
+
+    def __init__(self, stderr=False):
+        self.original_stream = sys.__stderr__ if stderr else sys.__stdout__
+        std_handle = self.STD_ERROR_HANDLE if stderr else self.STD_OUTPUT_HANDLE
+        self.win32_stream = ctypes.windll.kernel32.GetStdHandle(std_handle)
+        ctypes.windll.kernel32.GetConsoleScreenBufferInfo(self.win32_stream, ctypes.create_string_buffer(22))
+
+    def __getattr__(self, item):
+        return getattr(self.original_stream, item)
+
+    def _set_color(self, color_code):
+        ctypes.windll.kernel32.SetConsoleTextAttribute(self.win32_stream, color_code)
+
+    def write(self, p_str):
+        for segment in _RE_SPLIT.split(p_str):
+            if not segment:
+                # Empty string. p_str probably starts with colors so the first item is always ''.
+                continue
+            if not _RE_SPLIT.match(segment):
+                # No color codes, print regular text.
+                self.original_stream.write(segment)
+                self.original_stream.flush()
+                continue
+            for color_code in (int(c) for c in _RE_NUMBER_SEARCH.findall(segment)[0].split(';')):
+                if color_code in self.COMPILED_CODES:
+                    self._set_color(self.COMPILED_CODES[color_code])

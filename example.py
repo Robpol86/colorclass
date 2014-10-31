@@ -3,14 +3,9 @@
 
 Just prints sample text and exits.
 
-Windows support effortlessly provided with the help of colorama:
-    https://github.com/tartley/colorama
-Though only dark colors seem to work.
-
 Usage:
     example.py print [--light-bg]
-    example.py print -h | --help
-    example.py print_windows --light-bg
+    example.py -h | --help
 
 Options:
     -h --help       Show this screen.
@@ -18,16 +13,14 @@ Options:
 """
 
 from __future__ import print_function
-from colorclass import Color, set_light_background
+from colorclass import Color, set_light_background, Windows
 from docopt import docopt
 
 OPTIONS = docopt(__doc__) if __name__ == '__main__' else dict()
 
 
 def main():
-    if OPTIONS.get('print_windows'):
-        import colorama
-        colorama.init()
+    Windows.enable()  # Does nothing if not running on Windows.
 
     if OPTIONS.get('--light-bg'):
         set_light_background()
