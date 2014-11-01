@@ -5,7 +5,7 @@ import pytest
 
 from colorclass import Color, Windows
 
-pytestmark = pytest.mark.skipif(os.name != 'nt')
+pytestmark = pytest.mark.skipif(os.name != 'nt', reason='Requires windows.')
 
 
 def test():
