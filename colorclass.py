@@ -38,6 +38,9 @@ _BASE_CODES = {
     'autored': None, 'autoblack': None, 'automagenta': None, 'autowhite': None, 'autoblue': None, 'autoyellow': None,
     'autogreen': None, 'autocyan': None,
 
+    'autobgred': None, 'autobgblack': None, 'autobgmagenta': None, 'autobgwhite': None, 'autobgblue': None,
+    'autobgyellow': None, 'autobggreen': None, 'autobgcyan': None,
+
     '/black': 39, '/red': 39, '/green': 39, '/yellow': 39, '/blue': 39, '/magenta': 39, '/cyan': 39, '/white': 39,
     '/hiblack': 39, '/hired': 39, '/higreen': 39, '/hiyellow': 39, '/hiblue': 39, '/himagenta': 39, '/hicyan': 39,
     '/hiwhite': 39,
@@ -48,6 +51,9 @@ _BASE_CODES = {
 
     '/autored': 39, '/autoblack': 39, '/automagenta': 39, '/autowhite': 39, '/autoblue': 39, '/autoyellow': 39,
     '/autogreen': 39, '/autocyan': 39,
+
+    '/autobgred': 49, '/autobgblack': 49, '/autobgmagenta': 49, '/autobgwhite': 49, '/autobgblue': 49,
+    '/autobgyellow': 49, '/autobggreen': 49, '/autobgcyan': 49,
 }
 _WINDOWS_CODES = {
     '/all': -33, '/fg': -39, '/bg': -49,
@@ -101,6 +107,22 @@ class _AutoCodes(Mapping):
             answer = self.autocyan
         elif item == 'autowhite':
             answer = self.autowhite
+        elif item == 'autobgblack':
+            answer = self.autobgblack
+        elif item == 'autobgred':
+            answer = self.autobgred
+        elif item == 'autobggreen':
+            answer = self.autobggreen
+        elif item == 'autobgyellow':
+            answer = self.autobgyellow
+        elif item == 'autobgblue':
+            answer = self.autobgblue
+        elif item == 'autobgmagenta':
+            answer = self.autobgmagenta
+        elif item == 'autobgcyan':
+            answer = self.autobgcyan
+        elif item == 'autobgwhite':
+            answer = self.autobgwhite
         else:
             answer = self.__dict[item]
         return answer
@@ -150,6 +172,46 @@ class _AutoCodes(Mapping):
     def autowhite(self):
         """Returns automatic white foreground color depending on background color."""
         return self.__dict['white' if _AutoCodes.LIGHT_BACKGROUND else 'hiwhite']
+
+    @property
+    def autobgblack(self):
+        """Returns automatic black background color depending on background color."""
+        return self.__dict['bgblack' if _AutoCodes.LIGHT_BACKGROUND else 'hibgblack']
+
+    @property
+    def autobgred(self):
+        """Returns automatic red background color depending on background color."""
+        return self.__dict['bgred' if _AutoCodes.LIGHT_BACKGROUND else 'hibgred']
+
+    @property
+    def autobggreen(self):
+        """Returns automatic green background color depending on background color."""
+        return self.__dict['bggreen' if _AutoCodes.LIGHT_BACKGROUND else 'hibggreen']
+
+    @property
+    def autobgyellow(self):
+        """Returns automatic yellow background color depending on background color."""
+        return self.__dict['bgyellow' if _AutoCodes.LIGHT_BACKGROUND else 'hibgyellow']
+
+    @property
+    def autobgblue(self):
+        """Returns automatic blue background color depending on background color."""
+        return self.__dict['bgblue' if _AutoCodes.LIGHT_BACKGROUND else 'hibgblue']
+
+    @property
+    def autobgmagenta(self):
+        """Returns automatic magenta background color depending on background color."""
+        return self.__dict['bgmagenta' if _AutoCodes.LIGHT_BACKGROUND else 'hibgmagenta']
+
+    @property
+    def autobgcyan(self):
+        """Returns automatic cyan background color depending on background color."""
+        return self.__dict['bgcyan' if _AutoCodes.LIGHT_BACKGROUND else 'hibgcyan']
+
+    @property
+    def autobgwhite(self):
+        """Returns automatic white background color depending on background color."""
+        return self.__dict['bgwhite' if _AutoCodes.LIGHT_BACKGROUND else 'hibgwhite']
 
 
 def _pad_input(incoming):
@@ -391,7 +453,7 @@ class Windows(object):
 
     Call static method Windows.enable() to enable color support for the remainder of the process' lifetime.
 
-    This class is also context-aware. You can do this:
+    This class is also a context manager. You can do this:
     with Windows():
         print(Color('{autored}Test{/autored}'))
     """
@@ -446,8 +508,12 @@ class Windows(object):
 
         return True  # One or both streams are TTYs.
 
+    def __init__(self, auto_colors=False, reset_atexit=False):
+        self.auto_colors = auto_colors
+        self.reset_atexit = reset_atexit
+
     def __enter__(self):
-        Windows.enable()
+        Windows.enable(auto_colors=self.auto_colors, reset_atexit=self.reset_atexit)
 
     def __exit__(self, *_):
         Windows.disable()

@@ -4,31 +4,92 @@
 Just prints sample text and exits.
 
 Usage:
-    example.py print [--light-bg]
+    example.py print [--light-bg|--no-colors]
     example.py -h | --help
 
 Options:
     -h --help       Show this screen.
-    --light-bg      Autocolors adapt to white/light backgrounds.
+    --light-bg      Autocolors adapt to white/light backgrounds for Linux/OSX.
+    --no-colors     Strip out any foreground or background colors.
 """
 
 from __future__ import print_function
-from colorclass import Color, set_light_background, Windows
+from colorclass import Color, disable_all_colors, set_light_background, Windows
 from docopt import docopt
+import os
 
 OPTIONS = docopt(__doc__) if __name__ == '__main__' else dict()
 
 
 def main():
-    Windows.enable(auto_colors=True, reset_atexit=True)  # Does nothing if not running on Windows.
-
-    if OPTIONS.get('--light-bg'):
+    if OPTIONS.get('--no-colors'):
+        disable_all_colors()
+    elif os.name == 'nt':
+        Windows.enable(auto_colors=True, reset_atexit=True)
+    elif OPTIONS.get('--light-bg'):
         set_light_background()
 
+    # Light or dark colors.
     print('Autocolors for all backgrounds:')
-    print(Color('    {autoblack}Black{/autoblack} {autored}Red{/autored} {autogreen}Green{/autogreen} '), end='')
-    print(Color('{autoyellow}Yellow{/autoyellow} {autoblue}Blue{/autoblue} '), end='')
-    print(Color('{automagenta}Magenta{/automagenta} {autocyan}Cyan{/autocyan} {autowhite}White{/autowhite}'))
+    print('Light colors for dark backgrounds:')
+    print(Color('    {autoblack}Black{/hiblack} {autored}Red{/hired} {autogreen}Green{/higreen} '), end='')
+    print(Color('{autoyellow}Yellow{/hiyellow} {autoblue}Blue{/hiblue} {automagenta}Magenta{/himagenta} '), end='')
+    print(Color('{autocyan}Cyan{/hicyan} {autowhite}White{/hiwhite}'))
+
+    print(Color('    {autobgblack}{autoblack}Black{/hiblack}{/hibgblack} '), end='')
+    print(Color('{autobgblack}{autored}Red{/hired}{/hibgblack} {autobgblack}{autogreen}Green{/higreen}{/hibgblack} '), end='')
+    print(Color('{autobgblack}{autoyellow}Yellow{/hiyellow}{/hibgblack} '), end='')
+    print(Color('{autobgblack}{autoblue}Blue{/hiblue}{/hibgblack} '), end='')
+    print(Color('{autobgblack}{automagenta}Magenta{/himagenta}{/hibgblack} '), end='')
+    print(Color('{autobgblack}{autocyan}Cyan{/hicyan}{/hibgblack} {autobgblack}{autowhite}White{/hiwhite}{/hibgblack}'))
+
+    print(Color('    {autobgred}{autoblack}Black{/hiblack}{/hibgred} {autobgred}{autored}Red{/hired}{/hibgred} '), end='')
+    print(Color('{autobgred}{autogreen}Green{/higreen}{/hibgred} {autobgred}{autoyellow}Yellow{/hiyellow}{/hibgred} '), end='')
+    print(Color('{autobgred}{autoblue}Blue{/hiblue}{/hibgred} {autobgred}{automagenta}Magenta{/himagenta}{/hibgred} '), end='')
+    print(Color('{autobgred}{autocyan}Cyan{/hicyan}{/hibgred} {autobgred}{autowhite}White{/hiwhite}{/hibgred}'))
+
+    print(Color('    {autobggreen}{autoblack}Black{/hiblack}{/hibggreen} '), end='')
+    print(Color('{autobggreen}{autored}Red{/hired}{/hibggreen} {autobggreen}{autogreen}Green{/higreen}{/hibggreen} '), end='')
+    print(Color('{autobggreen}{autoyellow}Yellow{/hiyellow}{/hibggreen} '), end='')
+    print(Color('{autobggreen}{autoblue}Blue{/hiblue}{/hibggreen} '), end='')
+    print(Color('{autobggreen}{automagenta}Magenta{/himagenta}{/hibggreen} '), end='')
+    print(Color('{autobggreen}{autocyan}Cyan{/hicyan}{/hibggreen} {autobggreen}{autowhite}White{/hiwhite}{/hibggreen}'))
+
+    print(Color('    {autobgyellow}{autoblack}Black{/hiblack}{/hibgyellow} '), end='')
+    print(Color('{autobgyellow}{autored}Red{/hired}{/hibgyellow} '), end='')
+    print(Color('{autobgyellow}{autogreen}Green{/higreen}{/hibgyellow} '), end='')
+    print(Color('{autobgyellow}{autoyellow}Yellow{/hiyellow}{/hibgyellow} '), end='')
+    print(Color('{autobgyellow}{autoblue}Blue{/hiblue}{/hibgyellow} '), end='')
+    print(Color('{autobgyellow}{automagenta}Magenta{/himagenta}{/hibgyellow} '), end='')
+    print(Color('{autobgyellow}{autocyan}Cyan{/hicyan}{/hibgyellow} {autobgyellow}{autowhite}White{/hiwhite}{/hibgyellow}'))
+
+    print(Color('    {autobgblue}{autoblack}Black{/hiblack}{/hibgblue} {autobgblue}{autored}Red{/hired}{/hibgblue} '), end='')
+    print(Color('{autobgblue}{autogreen}Green{/higreen}{/hibgblue} '), end='')
+    print(Color('{autobgblue}{autoyellow}Yellow{/hiyellow}{/hibgblue} {autobgblue}{autoblue}Blue{/hiblue}{/hibgblue} '), end='')
+    print(Color('{autobgblue}{automagenta}Magenta{/himagenta}{/hibgblue} '), end='')
+    print(Color('{autobgblue}{autocyan}Cyan{/hicyan}{/hibgblue} {autobgblue}{autowhite}White{/hiwhite}{/hibgblue}'))
+
+    print(Color('    {autobgmagenta}{autoblack}Black{/hiblack}{/hibgmagenta} '), end='')
+    print(Color('{autobgmagenta}{autored}Red{/hired}{/hibgmagenta} '), end='')
+    print(Color('{autobgmagenta}{autogreen}Green{/higreen}{/hibgmagenta} '), end='')
+    print(Color('{autobgmagenta}{autoyellow}Yellow{/hiyellow}{/hibgmagenta} '), end='')
+    print(Color('{autobgmagenta}{autoblue}Blue{/hiblue}{/hibgmagenta} '), end='')
+    print(Color('{autobgmagenta}{automagenta}Magenta{/himagenta}{/hibgmagenta} '), end='')
+    print(Color('{autobgmagenta}{autocyan}Cyan{/hicyan}{/hibgmagenta} '), end='')
+    print(Color('{autobgmagenta}{autowhite}White{/hiwhite}{/hibgmagenta}'))
+
+    print(Color('    {autobgcyan}{autoblack}Black{/hiblack}{/hibgcyan} {autobgcyan}{autored}Red{/hired}{/hibgcyan} '), end='')
+    print(Color('{autobgcyan}{autogreen}Green{/higreen}{/hibgcyan} '), end='')
+    print(Color('{autobgcyan}{autoyellow}Yellow{/hiyellow}{/hibgcyan} {autobgcyan}{autoblue}Blue{/hiblue}{/hibgcyan} '), end='')
+    print(Color('{autobgcyan}{automagenta}Magenta{/himagenta}{/hibgcyan} '), end='')
+    print(Color('{autobgcyan}{autocyan}Cyan{/hicyan}{/hibgcyan} {autobgcyan}{autowhite}White{/hiwhite}{/hibgcyan}'))
+
+    print(Color('    {autobgwhite}{autoblack}Black{/hiblack}{/hibgwhite} '), end='')
+    print(Color('{autobgwhite}{autored}Red{/hired}{/hibgwhite} {autobgwhite}{autogreen}Green{/higreen}{/hibgwhite} '), end='')
+    print(Color('{autobgwhite}{autoyellow}Yellow{/hiyellow}{/hibgwhite} '), end='')
+    print(Color('{autobgwhite}{autoblue}Blue{/hiblue}{/hibgwhite} '), end='')
+    print(Color('{autobgwhite}{automagenta}Magenta{/himagenta}{/hibgwhite} '), end='')
+    print(Color('{autobgwhite}{autocyan}Cyan{/hicyan}{/hibgwhite} {autobgwhite}{autowhite}White{/hiwhite}{/hibgwhite}'))
     print()
 
     # Light colors.
