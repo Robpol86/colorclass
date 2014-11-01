@@ -3,12 +3,14 @@ environment:
     secure: PW0KT2w2PW50NcmuopDXXaSwkXq4vqYaDp+eOm/ZZN7wpAFbTM1uC0EnCir6BOVj
 
   matrix:
-    - PYTHON: "C:\\Python27"
-    - PYTHON: "C:\\Python27-x64"
-    - PYTHON: "C:\\Python33"
-    - PYTHON: "C:\\Python33-x64"
-    - PYTHON: "C:\\Python34"
-    - PYTHON: "C:\\Python34-x64"
+    - PYTHON: 'C:\\Python27'
+    - PYTHON: 'C:\\Python27-x64'
+    - PYTHON: 'C:\\Python33'
+    - PYTHON: 'C:\\Python33-x64'
+    - PYTHON: 'C:\\Python34'
+    - PYTHON: 'C:\\Python34-x64'
+
+platform: x64
 
 install:
   - ps: Start-FileDownload 'https://raw.github.com/pypa/pip/master/contrib/get-pip.py'

@@ -11,3 +11,6 @@ pytestmark = pytest.mark.skipif(os.name != 'nt', reason='Requires windows.')
 def test():
     with Windows(auto_colors=True, reset_atexit=True):
         print(Color('{autored}Test{/autored}.'))
+
+    with Windows(auto_colors=True, reset_atexit=True):
+        print(Color('{autobgred}Test{/autobgred}.'))
