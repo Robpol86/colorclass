@@ -12,7 +12,7 @@ install:
   - '%PYTHON%\\python.exe get-pip.py'
   - '%PYTHON%\\Scripts\\pip.exe install . --no-clean'
 
-build_script: '%PYTHON%\\Scripts\\pip.exe install coveralls docopt'
+build_script: '%PYTHON%\\Scripts\\pip.exe install pytest coveralls docopt'
 
 test_script:
   - '%PYTHON%\\python.exe setup.py test'
