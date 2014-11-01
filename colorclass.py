@@ -457,19 +457,20 @@ class Windows(object):
     with Windows():
         print(Color('{autored}Test{/autored}'))
     """
+
     @staticmethod
     def disable():
         """Restore sys.stderr and sys.stdout to their original objects. Resets colors to their original values."""
         if os.name == 'nt':
             getattr(sys.stderr, '_reset_colors', lambda: False)()
             getattr(sys.stdout, '_reset_colors', lambda: False)()
-        sys.stderr = sys.__stderr__
-        sys.stdout = sys.__stdout__
+        sys.stderr = getattr(sys.stderr, 'original_stream', sys.__stderr__)
+        sys.stdout = getattr(sys.stdout, 'original_stream', sys.__stdout__)
 
     @staticmethod
     def is_enabled():
         """Returns True if either stderr or stdout has colors enabled."""
-        return id(sys.stderr) != id(sys.__stderr__) or id(sys.stdout) != id(sys.__stdout__)
+        return isinstance(sys.stderr, _WindowsStream) or isinstance(sys.stdout, _WindowsStream)
 
     @staticmethod
     def enable(auto_colors=False, reset_atexit=False):
@@ -481,21 +482,18 @@ class Windows(object):
         reset_atexit -- resets original colors upon Python exit (in case you forget to reset it yourself with a closing
             tag).
         """
-        # Verify and flush.
         if os.name != 'nt':
             return False
-        if Windows.is_enabled():
-            return False
-        if not any(hasattr(s, 'isatty') and s.isatty() for s in (sys.stderr, sys.stdout)):
-            return False  # Both streams are not TTYs.
-        sys.__stderr__.flush()
-        sys.__stdout__.flush()
 
         # Overwrite stream references.
-        if hasattr(sys.stderr, 'isatty') and sys.stderr.isatty():
+        if getattr(sys.stderr, 'isatty', lambda: False)() and not isinstance(sys.stderr, _WindowsStream):
+            sys.stderr.flush()
             sys.stderr = _WindowsStream(stderr=True)
-        if hasattr(sys.stdout, 'isatty') and sys.stdout.isatty():
+        if getattr(sys.stdout, 'isatty', lambda: False)() and not isinstance(sys.stdout, _WindowsStream):
+            sys.stdout.flush()
             sys.stdout = _WindowsStream(stderr=False)
+        if not isinstance(sys.stderr, _WindowsStream) and not isinstance(sys.stdout, _WindowsStream):
+            return False
 
         # Automatically select which colors to display.
         bg_color = getattr(sys.stdout, 'default_bg', getattr(sys.stderr, 'default_bg', None))
@@ -551,7 +549,7 @@ class _WindowsStream(object):
     STD_OUTPUT_HANDLE = -11
 
     def __init__(self, stderr=False):
-        self.original_stream = sys.__stderr__ if stderr else sys.__stdout__
+        self.original_stream = sys.stderr if stderr else sys.stdout
         std_handle = self.STD_ERROR_HANDLE if stderr else self.STD_OUTPUT_HANDLE
         self.win32_stream = ctypes.windll.kernel32.GetStdHandle(std_handle)
         self.default_fg, self.default_bg = self._get_colors()
