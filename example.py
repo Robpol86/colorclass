@@ -31,7 +31,6 @@ def main():
 
     # Light or dark colors.
     print('Autocolors for all backgrounds:')
-    print('Light colors for dark backgrounds:')
     print(Color('    {autoblack}Black{/hiblack} {autored}Red{/hired} {autogreen}Green{/higreen} '), end='')
     print(Color('{autoyellow}Yellow{/hiyellow} {autoblue}Blue{/hiblue} {automagenta}Magenta{/himagenta} '), end='')
     print(Color('{autocyan}Cyan{/hicyan} {autowhite}White{/hiwhite}'))
