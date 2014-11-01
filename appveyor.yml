@@ -1,0 +1,18 @@
+environment:
+  matrix:
+    - PYTHON: "C:\\Python27"
+    - PYTHON: "C:\\Python27-x64"
+    - PYTHON: "C:\\Python33"
+    - PYTHON: "C:\\Python33-x64"
+    - PYTHON: "C:\\Python34"
+    - PYTHON: "C:\\Python34-x64"
+
+install: '%PYTHON%\\Scripts\\pip.exe install .'
+
+build_script: '%PYTHON%\\Scripts\\pip.exe install coveralls docopt'
+
+test_script:
+  - '%PYTHON%\\python.exe setup.py test'
+  - '%PYTHON%\\python.exe example.py print'
+
+after_test: '%PYTHON%\\Scripts\\coveralls.exe'
