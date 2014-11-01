@@ -39,8 +39,8 @@ def test_enable_then_disable():
 
 
 def test():
-    with Windows(auto_colors=True, reset_atexit=True):
+    with Windows(auto_colors=True):
         print(Color('{autored}Test{/autored}.'))
 
-    with Windows(auto_colors=True, reset_atexit=True):
+    with Windows(auto_colors=True):
         print(Color('{autobgred}Test{/autobgred}.'))

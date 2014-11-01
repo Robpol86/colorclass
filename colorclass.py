@@ -456,6 +456,10 @@ class Windows(object):
     This class is also a context manager. You can do this:
     with Windows():
         print(Color('{autored}Test{/autored}'))
+
+    Or this:
+    with Windows(auto_colors=True):
+        print(Color('{autored}Test{/autored}'))
     """
 
     @staticmethod
@@ -493,10 +497,10 @@ class Windows(object):
             return False
 
         # Overwrite stream references.
-        if getattr(sys.stderr, 'isatty', lambda: False)() and not isinstance(sys.stderr, _WindowsStream):
+        if not isinstance(sys.stderr, _WindowsStream):
             sys.stderr.flush()
             sys.stderr = _WindowsStream(stderr=True)
-        if getattr(sys.stdout, 'isatty', lambda: False)() and not isinstance(sys.stdout, _WindowsStream):
+        if not isinstance(sys.stdout, _WindowsStream):
             sys.stdout.flush()
             sys.stdout = _WindowsStream(stderr=False)
         if not isinstance(sys.stderr, _WindowsStream) and not isinstance(sys.stdout, _WindowsStream):
@@ -511,14 +515,13 @@ class Windows(object):
         if reset_atexit:
             atexit.register(lambda: Windows.disable())
 
-        return True  # One or both streams are TTYs.
+        return True
 
-    def __init__(self, auto_colors=False, reset_atexit=False):
+    def __init__(self, auto_colors=False):
         self.auto_colors = auto_colors
-        self.reset_atexit = reset_atexit
 
     def __enter__(self):
-        Windows.enable(auto_colors=self.auto_colors, reset_atexit=self.reset_atexit)
+        Windows.enable(auto_colors=self.auto_colors)
 
     def __exit__(self, *_):
         Windows.disable()
