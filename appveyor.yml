@@ -1,4 +1,7 @@
 environment:
+  COVERALLS_REPO_TOKEN:
+    secure: PW0KT2w2PW50NcmuopDXXaSwkXq4vqYaDp+eOm/ZZN7wpAFbTM1uC0EnCir6BOVj
+
   matrix:
     - PYTHON: "C:\\Python27"
     - PYTHON: "C:\\Python27-x64"
