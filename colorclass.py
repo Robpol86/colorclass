@@ -461,11 +461,18 @@ class Windows(object):
     @staticmethod
     def disable():
         """Restore sys.stderr and sys.stdout to their original objects. Resets colors to their original values."""
-        if os.name == 'nt':
-            getattr(sys.stderr, '_reset_colors', lambda: False)()
-            getattr(sys.stdout, '_reset_colors', lambda: False)()
-        sys.stderr = getattr(sys.stderr, 'original_stream', sys.__stderr__)
-        sys.stdout = getattr(sys.stdout, 'original_stream', sys.__stdout__)
+        if os.name != 'nt' or not Windows.is_enabled():
+            return False
+
+        getattr(sys.stderr, '_reset_colors', lambda: False)()
+        getattr(sys.stdout, '_reset_colors', lambda: False)()
+
+        if isinstance(sys.stderr, _WindowsStream):
+            sys.stderr = getattr(sys.stderr, 'original_stream')
+        if isinstance(sys.stderr, _WindowsStream):
+            sys.stdout = getattr(sys.stdout, 'original_stream')
+
+        return True
 
     @staticmethod
     def is_enabled():
