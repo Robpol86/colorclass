@@ -1,4 +1,4 @@
-"""Colorful worry-free console applications for Linux, Mac OSX, and Windows.
+"""Colorful worry-free console applications for Linux, Mac OS X, and Windows.
 
 Supported natively on Linux and Mac OSX (Just Works), and on Windows it works the same if Windows.enable() is called.
 
@@ -509,7 +509,7 @@ class Windows(object):
         # Automatically select which colors to display.
         bg_color = getattr(sys.stdout, 'default_bg', getattr(sys.stderr, 'default_bg', None))
         if auto_colors and bg_color is not None:
-            set_light_background() if bg_color in (112, 96, 48, 240, 176, 224) else set_dark_background()
+            set_light_background() if bg_color in (112, 96, 240, 176, 224, 208, 160) else set_dark_background()
 
         # Reset on exit if requested.
         if reset_atexit:

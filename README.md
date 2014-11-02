@@ -1,13 +1,18 @@
 # colorclass
 
-Yet another ANSI color text library for Python. Provides "auto colors" for dark/light terminals.
+Yet another ANSI color text library for Python. Provides "auto colors" for dark/light terminals. Works on Linux, OS X,
+and Windows. For Windows support you just need to call `Windows.enable()` in your application.
 
-In Python2.x this library subclasses `unicode`, while on Python3.x it subclasses `str`. `colorclass` is supported on
-Python 2.6, 2.7, 3.3, and 3.4.
+On Linux/OS X `autocolors` are toggled by calling `set_light_background()` and `set_dark_background()`. On Windows this
+can be done automatically if you call `Windows.enable(auto_colors=True)`.
 
-Windows support effortlessly provided with the help of [colorama](https://github.com/tartley/colorama/). I didn't have to
-change anything! Though only dark colors seem to work.
+In Python2.x this library subclasses `unicode`, while on Python3.x it subclasses `str`.
 
+* Python 2.6, 2.7, 3.3, and 3.4 supported on Linux, OS X, and Cygwin.
+* Python 2.7, 3.3, and 3.4 supported on Windows (both 32 and 64 bit versions of Python).
+
+[![Build Status](https://ci.appveyor.com/api/projects/status/l57wo6n5pc83enwt/branch/master?svg=true)]
+(https://ci.appveyor.com/project/Robpol86/colorclass)
 [![Build Status](https://travis-ci.org/Robpol86/colorclass.svg?branch=master)]
 (https://travis-ci.org/Robpol86/colorclass)
 [![Coverage Status](https://img.shields.io/coveralls/Robpol86/colorclass.svg)]
@@ -51,6 +56,14 @@ The available "auto colors" tags are:
 * automagenta
 * autocyan
 * autowhite
+* autobgblack
+* autobgred
+* autobggreen
+* autobgyellow
+* autobgblue
+* autobgmagenta
+* autobgcyan
+* autobgwhite
 
 Methods of Class instances try to return sane data, such as:
 
@@ -79,6 +92,10 @@ color_string.value_no_colors
 ```
 
 ## Changelog
+
+#### 1.1.0
+
+* Added native Windows support and automatic background colors.
 
 #### 1.0.2
 
