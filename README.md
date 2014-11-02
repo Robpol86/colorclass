@@ -11,6 +11,8 @@ In Python2.x this library subclasses `unicode`, while on Python3.x it subclasses
 * Python 2.6, 2.7, 3.3, and 3.4 supported on Linux, OS X, and Cygwin.
 * Python 2.7, 3.3, and 3.4 supported on Windows (both 32 and 64 bit versions of Python).
 
+Tested on Windows XP and Windows 10 technical preview.
+
 [![Build Status](https://ci.appveyor.com/api/projects/status/l57wo6n5pc83enwt/branch/master?svg=true)]
 (https://ci.appveyor.com/project/Robpol86/colorclass)
 [![Build Status](https://travis-ci.org/Robpol86/colorclass.svg?branch=master)]
