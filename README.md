@@ -13,7 +13,7 @@ In Python2.x this library subclasses `unicode`, while on Python3.x it subclasses
 
 Tested on Windows XP and Windows 10 technical preview.
 
-[![Build Status](https://ci.appveyor.com/api/projects/status/l57wo6n5pc83enwt/branch/master?svg=true)]
+[![Build Status Windows](https://ci.appveyor.com/api/projects/status/l57wo6n5pc83enwt/branch/master?svg=true)]
 (https://ci.appveyor.com/project/Robpol86/colorclass)
 [![Build Status](https://travis-ci.org/Robpol86/colorclass.svg?branch=master)]
 (https://travis-ci.org/Robpol86/colorclass)

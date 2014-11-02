@@ -91,7 +91,7 @@ class CmdLint(CmdStyle):
 
 ALL_DATA = dict(
     name=NAME,
-    description='Unicode class with automatic (light/dark background) terminal colors support.',
+    description='Colorful worry-free console applications for Linux, Mac OS X, and Windows.',
     url='https://github.com/Robpol86/{0}'.format(NAME),
     author_email='robpol86@gmail.com',
 
