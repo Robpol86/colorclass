@@ -14,7 +14,8 @@ import ctypes
 import os
 import re
 import sys
-import struct
+if os.name == 'nt':
+    import ctypes.wintypes
 
 __author__ = '@Robpol86'
 __license__ = 'MIT'
@@ -290,8 +291,24 @@ def list_tags():
     Tuple of tuples. Child tuples are four items: ('opening tag', 'closing tag', main ansi value, closing ansi value).
     """
     codes = _AutoCodes()
-    payload = [(k, '/{0}'.format(k), codes[k], codes['/{0}'.format(k)]) for k in codes if not k.startswith('/')]
-    payload.sort(key=lambda x: x[2])
+    grouped = set([(k, '/{0}'.format(k), codes[k], codes['/{0}'.format(k)]) for k in codes if not k.startswith('/')])
+
+    # Add half-tags like /all.
+    found = [c for r in grouped for c in r[:2]]
+    missing = set([('', r[0], None, r[1]) if r[0].startswith('/') else (r[0], '', r[1], None)
+                   for r in _AutoCodes().items() if r[0] not in found])
+    grouped |= missing
+
+    # Sort.
+    payload = sorted([i for i in grouped if i[2] is None], key=lambda x: x[3])  # /all /fg /bg
+    grouped -= set(payload)
+    payload.extend(sorted([i for i in grouped if i[2] < 10], key=lambda x: x[2]))  # b i u flash
+    grouped -= set(payload)
+    payload.extend(sorted([i for i in grouped if i[0].startswith('auto')], key=lambda x: x[2]))  # auto colors
+    grouped -= set(payload)
+    payload.extend(sorted([i for i in grouped if not i[0].startswith('hi')], key=lambda x: x[2]))  # dark colors
+    grouped -= set(payload)
+    payload.extend(sorted(grouped, key=lambda x: x[2]))  # light colors
     return tuple(payload)
 
 
@@ -527,6 +544,110 @@ class Windows(object):
         Windows.disable()
 
 
+class _WindowsCSBI(object):
+    """Interfaces with Windows CONSOLE_SCREEN_BUFFER_INFO API/DLL calls. Gets info for stderr and stdout.
+
+    References:
+        https://code.google.com/p/colorama/issues/detail?id=47.
+        pytest's py project: py/_io/terminalwriter.py.
+
+    Class variables:
+    CSBI -- ConsoleScreenBufferInfo class/struct (not instance, the class definition itself) defined in _define_csbi().
+    HANDLE_STDERR -- GetStdHandle() return integer for stderr.
+    HANDLE_STDOUT -- GetStdHandle() return integer for stdout.
+    WINDLL -- my own loaded instance of ctypes.WinDLL.
+    """
+
+    CSBI = None
+    HANDLE_STDERR = None
+    HANDLE_STDOUT = None
+    WINDLL = ctypes.LibraryLoader(getattr(ctypes, 'WinDLL', None))
+
+    @staticmethod
+    def _define_csbi():
+        """Defines structs and populates _WindowsCSBI.CSBI."""
+        if _WindowsCSBI.CSBI is not None:
+            return
+
+        class COORD(ctypes.Structure):
+            """Windows COORD structure. http://msdn.microsoft.com/en-us/library/windows/desktop/ms682119"""
+            _fields_ = [('X', ctypes.c_short), ('Y', ctypes.c_short)]
+
+        class SmallRECT(ctypes.Structure):
+            """Windows SMALL_RECT structure. http://msdn.microsoft.com/en-us/library/windows/desktop/ms686311"""
+            _fields_ = [('Left', ctypes.c_short), ('Top', ctypes.c_short), ('Right', ctypes.c_short),
+                        ('Bottom', ctypes.c_short)]
+
+        class ConsoleScreenBufferInfo(ctypes.Structure):
+            """Windows CONSOLE_SCREEN_BUFFER_INFO structure.
+            http://msdn.microsoft.com/en-us/library/windows/desktop/ms682093
+            """
+            _fields_ = [
+                ('dwSize', COORD),
+                ('dwCursorPosition', COORD),
+                ('wAttributes', ctypes.wintypes.WORD),
+                ('srWindow', SmallRECT),
+                ('dwMaximumWindowSize', COORD)
+            ]
+
+        _WindowsCSBI.CSBI = ConsoleScreenBufferInfo
+
+    @staticmethod
+    def initialize():
+        """Initializes the WINDLL resource and populated the CSBI class variable."""
+        _WindowsCSBI._define_csbi()
+        _WindowsCSBI.HANDLE_STDERR = _WindowsCSBI.HANDLE_STDERR or _WindowsCSBI.WINDLL.kernel32.GetStdHandle(-12)
+        _WindowsCSBI.HANDLE_STDOUT = _WindowsCSBI.HANDLE_STDOUT or _WindowsCSBI.WINDLL.kernel32.GetStdHandle(-11)
+        if _WindowsCSBI.WINDLL.kernel32.GetConsoleScreenBufferInfo.argtypes:
+            return
+
+        _WindowsCSBI.WINDLL.kernel32.GetStdHandle.argtypes = [ctypes.wintypes.DWORD]
+        _WindowsCSBI.WINDLL.kernel32.GetStdHandle.restype = ctypes.wintypes.HANDLE
+        _WindowsCSBI.WINDLL.kernel32.GetConsoleScreenBufferInfo.restype = ctypes.wintypes.BOOL
+        _WindowsCSBI.WINDLL.kernel32.GetConsoleScreenBufferInfo.argtypes = [
+            ctypes.wintypes.HANDLE, ctypes.POINTER(_WindowsCSBI.CSBI)
+        ]
+
+    @staticmethod
+    def get_info(handle):
+        """Get information about this current console window (for Microsoft Windows only).
+
+        Raises IOError if attempt to get information fails (if there is no console window).
+
+        Don't forget to call _WindowsCSBI.initialize() once in your application before calling this method.
+
+        Positional arguments:
+        handle -- either _WindowsCSBI.HANDLE_STDERR or _WindowsCSBI.HANDLE_STDOUT.
+
+        Returns:
+        Dictionary with different integer values. Keys are:
+            buffer_width -- width of the buffer (Screen Buffer Size in cmd.exe layout tab).
+            buffer_height -- height of the buffer (Screen Buffer Size in cmd.exe layout tab).
+            terminal_width -- width of the terminal window.
+            terminal_height -- height of the terminal window.
+            bg_color -- current background color (http://msdn.microsoft.com/en-us/library/windows/desktop/ms682088).
+            fg_color -- current text color code.
+        """
+        # Query Win32 API.
+        csbi = _WindowsCSBI.CSBI()
+        try:
+            if not _WindowsCSBI.WINDLL.kernel32.GetConsoleScreenBufferInfo(handle, ctypes.byref(csbi)):
+                raise IOError('Unable to get console screen buffer info from win32 API.')
+        except ctypes.ArgumentError:
+            raise IOError('Unable to get console screen buffer info from win32 API.')
+
+        # Parse data.
+        result = dict(
+            buffer_width=int(csbi.dwSize.X - 1),
+            buffer_height=int(csbi.dwSize.Y),
+            terminal_width=int(csbi.srWindow.Right - csbi.srWindow.Left),
+            terminal_height=int(csbi.srWindow.Bottom - csbi.srWindow.Top),
+            bg_color=int(csbi.wAttributes & 240),
+            fg_color=int(csbi.wAttributes % 16),
+        )
+        return result
+
+
 class _WindowsStream(object):
     """Replacement stream (overwrites sys.stdout and sys.stderr). When writing or printing, ANSI codes are converted.
 
@@ -548,20 +669,18 @@ class _WindowsStream(object):
 
     Instance variables:
     original_stream -- the original stream to write non-code text to.
-    win32_stream -- handle to the Windows stderr or stdout device. Used by other Windows functions.
+    win32_stream_handle -- handle to the Windows stderr or stdout device. Used by other Windows functions.
     default_fg -- the foreground Windows color code at the time of instantiation.
     default_bg -- the background Windows color code at the time of instantiation.
     """
 
     ALL_BG_CODES = [v for k, v in _WINDOWS_CODES.items() if k.startswith('bg') or k.startswith('hibg')]
     COMPILED_CODES = dict((v, _WINDOWS_CODES[k]) for k, v in _BASE_CODES.items() if k in _WINDOWS_CODES)
-    STD_ERROR_HANDLE = -12
-    STD_OUTPUT_HANDLE = -11
 
     def __init__(self, stderr=False):
+        _WindowsCSBI.initialize()
         self.original_stream = sys.stderr if stderr else sys.stdout
-        std_handle = self.STD_ERROR_HANDLE if stderr else self.STD_OUTPUT_HANDLE
-        self.win32_stream = ctypes.windll.kernel32.GetStdHandle(std_handle)
+        self.win32_stream_handle = _WindowsCSBI.HANDLE_STDERR if stderr else _WindowsCSBI.HANDLE_STDOUT
         self.default_fg, self.default_bg = self._get_colors()
 
     def __getattr__(self, item):
@@ -573,15 +692,16 @@ class _WindowsStream(object):
 
     def _get_colors(self):
         """Returns a tuple of two integers representing current colors: (foreground, background)."""
-        console_screen_buffer_info = ctypes.create_string_buffer(22)
-        ctypes.windll.kernel32.GetConsoleScreenBufferInfo(self.win32_stream, console_screen_buffer_info)
-        w_attributes = struct.unpack('hhhhHhhhhhh', console_screen_buffer_info.raw)[4]
-        current_fg, current_bg = w_attributes % 16, w_attributes & 240
-        return current_fg, current_bg
+        try:
+            csbi = _WindowsCSBI.get_info(self.win32_stream_handle)
+            return csbi['fg_color'], csbi['bg_color']
+        except IOError:
+            return 7, 0
 
     def _reset_colors(self):
         """Sets the foreground and background colors to their original values (when class was instantiated)."""
-        self._set_color(self.default_fg | self.default_bg)
+        final_color_code = self.default_fg | self.default_bg
+        _WindowsCSBI.WINDLL.kernel32.SetConsoleTextAttribute(self.win32_stream_handle, final_color_code)
 
     def _set_color(self, color_code):
         """Changes the foreground and background colors for subsequently printed characters.
@@ -616,7 +736,7 @@ class _WindowsStream(object):
             final_color_code = color_code | (current_fg if new_is_bg else current_bg)
 
         # Set new code.
-        ctypes.windll.kernel32.SetConsoleTextAttribute(self.win32_stream, final_color_code)
+        _WindowsCSBI.WINDLL.kernel32.SetConsoleTextAttribute(self.win32_stream_handle, final_color_code)
 
     def write(self, p_str):
         for segment in _RE_SPLIT.split(p_str):
