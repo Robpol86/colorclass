@@ -6,5 +6,6 @@ def test_main():
     tags = list_tags()
 
     for group in tags:
-        assert group[2] == codes[group[0]]
+        if group[0]:
+            assert group[2] == codes[group[0]]
         assert group[3] == codes[group[1]]
