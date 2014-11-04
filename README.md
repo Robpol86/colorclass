@@ -95,6 +95,12 @@ color_string.value_no_colors
 
 ## Changelog
 
+#### 1.1.1
+
+* Fixed Python 2.7 64-bit original colors bug on Windows.
+* Fixed resetting colors when `reset_atexit` is True.
+* Improved sorting of `list_tags()`.
+
 #### 1.1.0
 
 * Added native Windows support and automatic background colors.
