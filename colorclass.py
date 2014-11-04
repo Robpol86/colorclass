@@ -700,8 +700,7 @@ class _WindowsStream(object):
 
     def _reset_colors(self):
         """Sets the foreground and background colors to their original values (when class was instantiated)."""
-        final_color_code = self.default_fg | self.default_bg
-        _WindowsCSBI.WINDLL.kernel32.SetConsoleTextAttribute(self.win32_stream_handle, final_color_code)
+        self._set_color(-33)
 
     def _set_color(self, color_code):
         """Changes the foreground and background colors for subsequently printed characters.
