@@ -24,4 +24,4 @@ test_script:
   - '%PYTHON%\\python.exe setup.py test'
   - '%PYTHON%\\python.exe example.py print'
 
-after_test: '%PYTHON%\\Scripts\\coveralls.exe'
+after_test: 'cmd /C "set TRAVIS_BRANCH=%APPVEYOR_REPO_BRANCH% && %PYTHON%\\Scripts\\coveralls.exe"'
