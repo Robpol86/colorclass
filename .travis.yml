@@ -1,18 +1,19 @@
 language: python
 
 python:
-  - '2.6'
-  - '2.7'
-  - 'pypy'
-  - '3.3'
-  - '3.4'
+  - 2.6
+  - 2.7
+  - pypy
+  - 3.3
+  - 3.4
 
-install: 'pip install .'
-
-before_script: 'pip install python-coveralls docopt'
+install:
+  - python -c 'import setup; print(setup.REQUIRES_PIP)' |xargs pip install
+  - pip install robpol86-codecov docopt
+  - pip install .
 
 script:
-  - 'python setup.py test'
-  - 'python example.py print'
+  - python setup.py test
+  - python example.py print
 
-after_success: 'coveralls -i'
+after_success: codecov

@@ -8,24 +8,20 @@ can be done automatically if you call `Windows.enable(auto_colors=True)`.
 
 In Python2.x this library subclasses `unicode`, while on Python3.x it subclasses `str`.
 
-* Python 2.6, 2.7, 3.3, and 3.4 supported on Linux, OS X, and Cygwin.
+* Python 2.6, 2.7, 3.3, and 3.4 supported on Linux and OS X.
 * Python 2.7, 3.3, and 3.4 supported on Windows (both 32 and 64 bit versions of Python).
 
 Tested on Windows XP and Windows 10 technical preview.
 
-[![Build Status Windows](https://ci.appveyor.com/api/projects/status/l57wo6n5pc83enwt/branch/master?svg=true)]
+[![Build Status Windows](https://img.shields.io/appveyor/ci/Robpol86/colorclass.svg?style=flat-square)]
 (https://ci.appveyor.com/project/Robpol86/colorclass)
-[![Build Status](https://travis-ci.org/Robpol86/colorclass.svg?branch=master)]
+[![Build Status](https://img.shields.io/travis/Robpol86/colorclass/master.svg?style=flat-square)]
 (https://travis-ci.org/Robpol86/colorclass)
-[![Coverage Status](https://img.shields.io/coveralls/Robpol86/colorclass.svg)]
-(https://coveralls.io/r/Robpol86/colorclass)
-[![Latest Version](https://pypip.in/version/colorclass/badge.png)]
+[![Coverage Status](https://img.shields.io/codecov/c/github/Robpol86/colorclass/master.svg?style=flat-square)]
+(https://codecov.io/github/Robpol86/colorclass)
+[![Latest Version](https://img.shields.io/pypi/v/colorclass.svg?style=flat-square)]
 (https://pypi.python.org/pypi/colorclass/)
-[![Downloads](https://pypip.in/download/colorclass/badge.png)]
-(https://pypi.python.org/pypi/colorclass/)
-[![Download format](https://pypip.in/format/colorclass/badge.png)]
-(https://pypi.python.org/pypi/colorclass/)
-[![License](https://pypip.in/license/colorclass/badge.png)]
+[![Downloads](https://img.shields.io/pypi/dm/colorclass.svg?style=flat-square)]
 (https://pypi.python.org/pypi/colorclass/)
 
 ## Quickstart
