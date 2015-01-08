@@ -1,6 +1,7 @@
 environment:
   CODECOV_TOKEN:
     secure: rKevzGfmt4DqixpPWYf8KE40q2a4NknSXJiecG663Raa/AJXC1r6kdfEoiqiCQRe
+  PYTHONIOENCODING: utf-8
 
   matrix:
     - PYTHON: C:\Python27
