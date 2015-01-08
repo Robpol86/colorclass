@@ -112,6 +112,11 @@ There are also a couple of helper attributes for all Color instances:
 Changelog
 ---------
 
+1.1.2
+`````
+
+* Maintaining ``Color`` type through ``.encode()`` and ``.decode()`` chains.
+
 1.1.1
 `````
 

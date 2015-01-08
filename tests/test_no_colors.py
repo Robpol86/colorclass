@@ -35,6 +35,17 @@ def test_format():
     assert 'test' == Color('%s') % 'test'
 
 
+def test_encode_decode():
+    decode = lambda i: i.decode('utf-8') if sys.version_info[0] == 2 else i
+
+    assert decode('äöüß') == Color(decode('äöüß')).encode('utf-8').decode('utf-8')
+    assert 4 == len(Color(decode('äöüß')).encode('utf-8').decode('utf-8'))
+
+    assert (u'\ua000abcd\u07b4'.encode('utf-8').decode('utf-8') ==
+            Color(u'\ua000abcd\u07b4'.encode('utf-8').decode('utf-8')).encode('utf-8').decode('utf-8'))
+    assert 6 == len(Color(u'\ua000abcd\u07b4'.encode('utf-8').decode('utf-8')).encode('utf-8').decode('utf-8'))
+
+
 def test_common():
     value = Color('this is a test.')
 

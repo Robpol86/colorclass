@@ -37,6 +37,18 @@ def test_format():
     assert '\033[31mtest\033[39m' == Color('{red}%s{/red}') % 'test'
 
 
+def test_encode_decode():
+    decode = lambda i: i.decode('utf-8') if sys.version_info[0] == 2 else i
+    assert (decode('\033[31mä\033[39;32möüß\033[39m') ==
+            Color(decode('{red}ä{/red}{green}öüß{/green}')).encode('utf-8').decode('utf-8'))
+    assert 4 == len(Color(decode('{red}ä{/red}{green}öüß{/green}')).encode('utf-8').decode('utf-8'))
+
+    assert (u'\033[31m\ua000abcd\u07b4\033[39m'.encode('utf-8').decode('utf-8') ==
+            Color(u'{red}\ua000abcd\u07b4{/red}'.encode('utf-8').decode('utf-8')).encode('utf-8').decode('utf-8'))
+    assert 6 == len(Color(u'{red}\ua000abcd\u07b4{/red}'.encode('utf-8').decode('utf-8')).encode('utf-8')
+                    .decode('utf-8'))
+
+
 def test_common():
     value = Color('{red}this is a test.{/red}')
 
