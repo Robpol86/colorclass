@@ -48,13 +48,13 @@ Install:
 Example Implementation
 ----------------------
 
-.. image:: /example.png?raw=true
+.. image:: https://github.com/Robpol86/colorclass/raw/master/example.png?raw=true
    :alt: Example Script Screenshot
 
-.. image:: /example_windows.png?raw=true
+.. image:: https://github.com/Robpol86/colorclass/raw/master/example_windows.png?raw=true
    :alt: Example Windows Screenshot
 
-Source code for the example code is: `example.py <example.py>`_
+Source code for the example code is: `example.py <https://github.com/Robpol86/colorclass/blob/master/example.py>`_
 
 Usage
 -----
