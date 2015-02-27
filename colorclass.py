@@ -327,6 +327,59 @@ class Color(PARENT_CLASS):
     For a list of codes, call: colorclass.list_tags()
     """
 
+    @classmethod
+    def red(cls, s, auto=False):
+        return cls.colorize('red', s, auto=auto)
+
+    @classmethod
+    def bgred(cls, s, auto=False):
+        return cls.colorize('bgred', s, auto=auto)
+
+    @classmethod
+    def green(cls, s, auto=False):
+        return cls.colorize('green', s, auto=auto)
+
+    @classmethod
+    def bggreen(cls, s, auto=False):
+        return cls.colorize('bggreen', s, auto=auto)
+
+    @classmethod
+    def blue(cls, s, auto=False):
+        return cls.colorize('blue', s, auto=auto)
+
+    @classmethod
+    def bgblue(cls, s, auto=False):
+        return cls.colorize('bgblue', s, auto=auto)
+
+    @classmethod
+    def yellow(cls, s, auto=False):
+        return cls.colorize('yellow', s, auto=auto)
+
+    @classmethod
+    def bgyellow(cls, s, auto=False):
+        return cls.colorize('bgyellow', s, auto=auto)
+
+    @classmethod
+    def cyan(cls, s, auto=False):
+        return cls.colorize('cyan', s, auto=auto)
+
+    @classmethod
+    def bgcyan(cls, s, auto=False):
+        return cls.colorize('bgcyan', s, auto=auto)
+
+    @classmethod
+    def magenta(cls, s, auto=False):
+        return cls.colorize('magenta', s, auto=auto)
+
+    @classmethod
+    def bgmagenta(cls, s, auto=False):
+        return cls.colorize('bgmagenta', s, auto=auto)
+
+    @classmethod
+    def colorize(cls, color, s, auto=False):
+        tag = '%s%s' % ('auto' if auto else '', color)
+        return cls('{%s}%s{/%s}' % (tag, s, tag))
+
     def __new__(cls, *args, **kwargs):
         parent_class = cls.__bases__[0]
         value_markup = args[0] if args else parent_class()
