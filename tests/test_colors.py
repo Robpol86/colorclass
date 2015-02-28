@@ -38,7 +38,9 @@ def test_format():
 
 
 def test_encode_decode():
-    decode = lambda i: i.decode('utf-8') if sys.version_info[0] == 2 else i
+    def decode(i):
+        return i.decode('utf-8') if sys.version_info[0] == 2 else i
+
     assert (decode('\033[31mä\033[39;32möüß\033[39m') ==
             Color(decode('{red}ä{/red}{green}öüß{/green}')).encode('utf-8').decode('utf-8'))
     assert 4 == len(Color(decode('{red}ä{/red}{green}öüß{/green}')).encode('utf-8').decode('utf-8'))

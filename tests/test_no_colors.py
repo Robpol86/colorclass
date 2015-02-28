@@ -36,7 +36,8 @@ def test_format():
 
 
 def test_encode_decode():
-    decode = lambda i: i.decode('utf-8') if sys.version_info[0] == 2 else i
+    def decode(i):
+        return i.decode('utf-8') if sys.version_info[0] == 2 else i
 
     assert decode('äöüß') == Color(decode('äöüß')).encode('utf-8').decode('utf-8')
     assert 4 == len(Color(decode('äöüß')).encode('utf-8').decode('utf-8'))
@@ -123,8 +124,8 @@ def test_py3():
         return
     value = Color('this is a test.')
 
-    #assert '' == Color(b'', 'latin-1')  bytes has no .format().
-    #assert 'abc' == Color(b'\x80abc', errors='ignore')
+    # assert '' == Color(b'', 'latin-1')  bytes has no .format().
+    # assert 'abc' == Color(b'\x80abc', errors='ignore')
 
     assert 'ss' == Color('ß').casefold()
     assert 'Guido was born in country' == Color('{name} was born in {country}').format_map(Default(name='Guido'))
