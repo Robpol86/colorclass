@@ -35,7 +35,7 @@ def test_enable_then_disable():
 
     assert Windows.disable()
     assert original_stderr_id == id(sys.stderr)
-    #assert original_stdout_id == id(sys.stdout)  # pytest does some weird shit.
+    # assert original_stdout_id == id(sys.stdout)  # pytest does some weird shit.
 
 
 def test():
