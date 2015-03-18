@@ -138,7 +138,8 @@ def test_py3():
         return
     value = Color('{red}this is a test.{/red}')
 
-    assert '\033[31mss\033[39m' == Color('{red}ß{/red}').casefold()
+    if hasattr(Color, 'casefold'):
+        assert '\033[31mss\033[39m' == Color('{red}ß{/red}').casefold()
 
     actual = Color('{red}{name} was born in {country}{/red}').format_map(Default(name='Guido'))
     assert '\033[31mGuido was born in country\033[39m' == actual

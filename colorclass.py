@@ -80,7 +80,7 @@ _WINDOWS_CODES = {
 _RE_GROUP_SEARCH = re.compile(r'(?:\033\[[\d;]+m)+')
 _RE_NUMBER_SEARCH = re.compile(r'\033\[([\d;]+)m')
 _RE_SPLIT = re.compile(r'(\033\[[\d;]+m)')
-PARENT_CLASS = unicode if sys.version_info[0] == 2 else str
+PARENT_CLASS = type(u'')
 
 
 class _AutoCodes(Mapping):

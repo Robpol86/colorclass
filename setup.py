@@ -17,9 +17,14 @@ KEYWORDS = 'Shell Bash ANSI ASCII terminal console colors automatic'
 NAME = 'colorclass'
 NAME_FILE = NAME
 PACKAGE = False
-REQUIRES_INSTALL = []
-REQUIRES_TEST = ['pytest-cov']
-REQUIRES_PIP = '"' + '" "'.join(set(REQUIRES_INSTALL + REQUIRES_TEST)) + '"'
+
+
+def packages_or_py_modules():
+    if not PACKAGE:
+        return dict(py_modules=[NAME_FILE])
+    packages = [NAME_FILE]
+    packages.extend([os.path.join(r, s) for r, d, _ in os.walk(NAME_FILE) for s in d if s != '__pycache__'])
+    return dict(packages=packages)
 
 
 def get_metadata(main_file):
@@ -31,6 +36,16 @@ def get_metadata(main_file):
     Returns:
     Dictionary to be passed into setuptools.setup().
     """
+    install_requires, tests_require = list(), list()
+    if os.path.isfile(os.path.join(HERE, 'requirements.txt')):
+        with open(os.path.join(HERE, 'requirements.txt')) as f:
+            data = f.read()
+            install_requires = (data.decode('ascii', 'ignore') if hasattr(data, 'decode') else data).splitlines()
+    if os.path.isfile(os.path.join(HERE, 'requirements-test.txt')):
+        with open(os.path.join(HERE, 'requirements-test.txt')) as f:
+            data = f.read()
+            (data.decode('ascii', 'ignore') if hasattr(data, 'decode') else data).splitlines()
+
     with open(os.path.join(HERE, 'README.rst'), encoding='utf-8') as f:
         long_description = f.read(100000)
 
@@ -43,16 +58,22 @@ def get_metadata(main_file):
     if not all(everything.values()):
         raise ValueError('Failed to obtain metadata from package/module.')
 
+    everything.update(packages_or_py_modules())
+    everything.update(dict(install_requires=install_requires, tests_require=tests_require))
+
     return everything
 
 
 class PyTest(test):
     description = 'Run all tests.'
+    user_options = []
+    CMD = 'test'
     TEST_ARGS = ['--cov-report', 'term-missing', '--cov', NAME_FILE, 'tests']
 
     def finalize_options(self):
+        overflow_args = sys.argv[sys.argv.index(self.CMD) + 1:]
         test.finalize_options(self)
-        setattr(self, 'test_args', self.TEST_ARGS)
+        setattr(self, 'test_args', self.TEST_ARGS + overflow_args)
         setattr(self, 'test_suite', True)
 
     def run_tests(self):
@@ -64,36 +85,19 @@ class PyTest(test):
 
 class PyTestPdb(PyTest):
     description = 'Run all tests, drops to ipdb upon unhandled exception.'
+    CMD = 'testpdb'
     TEST_ARGS = ['--ipdb', 'tests']
 
 
 class PyTestCovWeb(PyTest):
     description = 'Generates HTML report on test coverage.'
+    CMD = 'testcovweb'
     TEST_ARGS = ['--cov-report', 'html', '--cov', NAME_FILE, 'tests']
 
     def run_tests(self):
         if find_executable('open'):
             atexit.register(lambda: subprocess.call(['open', os.path.join(HERE, 'htmlcov', 'index.html')]))
         PyTest.run_tests(self)
-
-
-class CmdStyle(setuptools.Command):
-    user_options = []
-    CMD_ARGS = ['flake8', '--max-line-length', '120', '--statistics', NAME_FILE + ('' if PACKAGE else '.py')]
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        subprocess.call(self.CMD_ARGS)
-
-
-class CmdLint(CmdStyle):
-    description = 'Run pylint on entire project.'
-    CMD_ARGS = ['pylint', '--max-line-length', '120', NAME_FILE + ('' if PACKAGE else '.py')]
 
 
 ALL_DATA = dict(
@@ -124,12 +128,8 @@ ALL_DATA = dict(
     ],
 
     keywords=KEYWORDS,
-    py_modules=[NAME_FILE],
     zip_safe=True,
-
-    install_requires=REQUIRES_INSTALL,
-    tests_require=REQUIRES_TEST,
-    cmdclass=dict(test=PyTest, testpdb=PyTestPdb, testcovweb=PyTestCovWeb, style=CmdStyle, lint=CmdLint),
+    cmdclass={PyTest.CMD: PyTest, PyTestPdb.CMD: PyTestPdb, PyTestCovWeb.CMD: PyTestCovWeb},
 
     # Pass the rest from get_metadata().
     **get_metadata(os.path.join(NAME_FILE + ('/__init__.py' if PACKAGE else '.py')))

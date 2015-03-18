@@ -14,9 +14,10 @@ Options:
 """
 
 from __future__ import print_function
-from colorclass import Color, disable_all_colors, set_light_background, Windows
-from docopt import docopt
 import os
+
+from docopt import docopt
+from colorclass import Color, disable_all_colors, set_light_background, Windows
 
 OPTIONS = docopt(__doc__) if __name__ == '__main__' else dict()
 
