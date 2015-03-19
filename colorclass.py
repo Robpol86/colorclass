@@ -14,6 +14,7 @@ import ctypes
 import os
 import re
 import sys
+
 if os.name == 'nt':
     import ctypes.wintypes
 
@@ -554,9 +555,9 @@ class Windows(object):
         getattr(sys.stderr, '_reset_colors', lambda: False)()
         getattr(sys.stdout, '_reset_colors', lambda: False)()
 
-        if isinstance(sys.stderr, _WindowsStream):
+        if hasattr(sys.stderr, 'original_stream'):
             sys.stderr = getattr(sys.stderr, 'original_stream')
-        if isinstance(sys.stderr, _WindowsStream):
+        if hasattr(sys.stdout, 'original_stream'):
             sys.stdout = getattr(sys.stdout, 'original_stream')
 
         return True
@@ -564,7 +565,7 @@ class Windows(object):
     @staticmethod
     def is_enabled():
         """Returns True if either stderr or stdout has colors enabled."""
-        return isinstance(sys.stderr, _WindowsStream) or isinstance(sys.stdout, _WindowsStream)
+        return hasattr(sys.stderr, 'original_stream') or hasattr(sys.stdout, 'original_stream')
 
     @staticmethod
     def enable(auto_colors=False, reset_atexit=False):
@@ -580,13 +581,13 @@ class Windows(object):
             return False
 
         # Overwrite stream references.
-        if not isinstance(sys.stderr, _WindowsStream):
+        if not hasattr(sys.stderr, 'original_stream'):
             sys.stderr.flush()
             sys.stderr = _WindowsStream(stderr=True)
-        if not isinstance(sys.stdout, _WindowsStream):
+        if not hasattr(sys.stdout, 'original_stream'):
             sys.stdout.flush()
             sys.stdout = _WindowsStream(stderr=False)
-        if not isinstance(sys.stderr, _WindowsStream) and not isinstance(sys.stdout, _WindowsStream):
+        if not hasattr(sys.stderr, 'original_stream') and not hasattr(sys.stdout, 'original_stream'):
             return False
 
         # Automatically select which colors to display.
