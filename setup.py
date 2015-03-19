@@ -14,6 +14,7 @@ from setuptools.command.test import test
 _JOIN = lambda *p: os.path.join(HERE, *p)
 _PACKAGES = lambda: [os.path.join(r, s) for r, d, _ in os.walk(NAME_FILE) for s in d if s != '__pycache__']
 _REQUIRES = lambda p: [i for i in open(_JOIN(p), encoding='utf-8') if i[0] != '-'] if os.path.exists(_JOIN(p)) else []
+_VERSION_RE = re.compile(r"^__(version|author|license)__ = '([\w\.@]+)'$", re.MULTILINE)
 
 CLASSIFIERS = (
     'Development Status :: 5 - Production/Stable',
@@ -95,9 +96,8 @@ ALL_DATA = dict(
 )
 
 
-with open(_JOIN(VERSION_FILE), encoding='utf-8') as f:
-    # noinspection PyTypeChecker
-    ALL_DATA.update(dict(re.findall("^__(version|author|license)__ = '([\w\.@]+)'$", f.read(1000), re.MULTILINE)))
+# noinspection PyTypeChecker
+ALL_DATA.update(dict(_VERSION_RE.findall(open(_JOIN(VERSION_FILE), encoding='utf-8').read(1000).replace('\r\n', '\n'))))
 ALL_DATA.update(dict(py_modules=[NAME_FILE]) if not PACKAGE else dict(packages=[NAME_FILE] + _PACKAGES()))
 
 
