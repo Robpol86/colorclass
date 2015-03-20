@@ -378,7 +378,7 @@ class Color(PARENT_CLASS):
 
     @classmethod
     def colorize(cls, color, s, auto=False):
-        tag = '%s%s' % ('auto' if auto else '', color)
+        tag = '{0}{1}'.format('auto' if auto else '', color)
         return cls('{%s}%s{/%s}' % (tag, s, tag))
 
     def __new__(cls, *args, **kwargs):
@@ -555,17 +555,17 @@ class Windows(object):
         getattr(sys.stderr, '_reset_colors', lambda: False)()
         getattr(sys.stdout, '_reset_colors', lambda: False)()
 
-        if hasattr(sys.stderr, 'original_stream'):
-            sys.stderr = getattr(sys.stderr, 'original_stream')
-        if hasattr(sys.stdout, 'original_stream'):
-            sys.stdout = getattr(sys.stdout, 'original_stream')
+        if hasattr(sys.stderr, 'ORIGINAL_STREAM'):
+            sys.stderr = getattr(sys.stderr, 'ORIGINAL_STREAM')
+        if hasattr(sys.stdout, 'ORIGINAL_STREAM'):
+            sys.stdout = getattr(sys.stdout, 'ORIGINAL_STREAM')
 
         return True
 
     @staticmethod
     def is_enabled():
         """Returns True if either stderr or stdout has colors enabled."""
-        return hasattr(sys.stderr, 'original_stream') or hasattr(sys.stdout, 'original_stream')
+        return hasattr(sys.stderr, 'ORIGINAL_STREAM') or hasattr(sys.stdout, 'ORIGINAL_STREAM')
 
     @staticmethod
     def enable(auto_colors=False, reset_atexit=False):
@@ -581,13 +581,13 @@ class Windows(object):
             return False
 
         # Overwrite stream references.
-        if not hasattr(sys.stderr, 'original_stream'):
+        if not hasattr(sys.stderr, 'ORIGINAL_STREAM'):
             sys.stderr.flush()
-            sys.stderr = _WindowsStream(stderr=True)
-        if not hasattr(sys.stdout, 'original_stream'):
+            sys.stderr = _WindowsStreamStdErr()
+        if not hasattr(sys.stdout, 'ORIGINAL_STREAM'):
             sys.stdout.flush()
-            sys.stdout = _WindowsStream(stderr=False)
-        if not hasattr(sys.stderr, 'original_stream') and not hasattr(sys.stdout, 'original_stream'):
+            sys.stdout = _WindowsStreamStdOut()
+        if not hasattr(sys.stderr, 'ORIGINAL_STREAM') and not hasattr(sys.stdout, 'ORIGINAL_STREAM'):
             return False
 
         # Automatically select which colors to display.
@@ -615,6 +615,7 @@ class _WindowsCSBI(object):
     """Interfaces with Windows CONSOLE_SCREEN_BUFFER_INFO API/DLL calls. Gets info for stderr and stdout.
 
     References:
+        http://msdn.microsoft.com/en-us/library/windows/desktop/ms683231
         https://code.google.com/p/colorama/issues/detail?id=47.
         pytest's py project: py/_io/terminalwriter.py.
 
@@ -715,8 +716,8 @@ class _WindowsCSBI(object):
         return result
 
 
-class _WindowsStream(object):
-    """Replacement stream (overwrites sys.stdout and sys.stderr). When writing or printing, ANSI codes are converted.
+class _WindowsStreamStdOut(object):
+    """Replacement stream which overrides sys.stdout. When writing or printing, ANSI codes are converted.
 
     ANSI (Linux/Unix) color codes are converted into win32 system calls, changing the next character's color before
     printing it. Resources referenced:
@@ -731,36 +732,38 @@ class _WindowsStream(object):
     Class variables:
     ALL_BG_CODES -- list of background Windows codes. Used to determine if requested color is foreground or background.
     COMPILED_CODES -- 'translation' dictionary. Keys are ANSI codes (values of _BASE_CODES), values are Windows codes.
-    STD_ERROR_HANDLE -- http://msdn.microsoft.com/en-us/library/windows/desktop/ms683231
-    STD_OUTPUT_HANDLE -- http://msdn.microsoft.com/en-us/library/windows/desktop/ms683231
+    ORIGINAL_STREAM -- the original stream to write non-code text to.
+    WIN32_STREAM_HANDLE -- handle to the Windows stdout device. Used by other Windows functions.
 
     Instance variables:
-    original_stream -- the original stream to write non-code text to.
-    win32_stream_handle -- handle to the Windows stderr or stdout device. Used by other Windows functions.
     default_fg -- the foreground Windows color code at the time of instantiation.
     default_bg -- the background Windows color code at the time of instantiation.
     """
 
     ALL_BG_CODES = [v for k, v in _WINDOWS_CODES.items() if k.startswith('bg') or k.startswith('hibg')]
     COMPILED_CODES = dict((v, _WINDOWS_CODES[k]) for k, v in _BASE_CODES.items() if k in _WINDOWS_CODES)
+    ORIGINAL_STREAM = sys.stdout
+    WIN32_STREAM_HANDLE = _WindowsCSBI.HANDLE_STDOUT
 
-    def __init__(self, stderr=False):
+    def __init__(self):
         _WindowsCSBI.initialize()
-        self.original_stream = sys.stderr if stderr else sys.stdout
-        self.win32_stream_handle = _WindowsCSBI.HANDLE_STDERR if stderr else _WindowsCSBI.HANDLE_STDOUT
         self.default_fg, self.default_bg = self._get_colors()
+        for attr in dir(self.ORIGINAL_STREAM):
+            if hasattr(self, attr):
+                continue
+            setattr(self, attr, getattr(self.ORIGINAL_STREAM, attr))
 
     def __getattr__(self, item):
         """If an attribute/function/etc is not defined in this function, retrieve the one from the original stream.
 
         Fixes ipython arrow key presses.
         """
-        return getattr(self.original_stream, item)
+        return getattr(self.ORIGINAL_STREAM, item)
 
     def _get_colors(self):
         """Returns a tuple of two integers representing current colors: (foreground, background)."""
         try:
-            csbi = _WindowsCSBI.get_info(self.win32_stream_handle)
+            csbi = _WindowsCSBI.get_info(self.WIN32_STREAM_HANDLE)
             return csbi['fg_color'], csbi['bg_color']
         except IOError:
             return 7, 0
@@ -802,7 +805,7 @@ class _WindowsStream(object):
             final_color_code = color_code | (current_fg if new_is_bg else current_bg)
 
         # Set new code.
-        _WindowsCSBI.WINDLL.kernel32.SetConsoleTextAttribute(self.win32_stream_handle, final_color_code)
+        _WindowsCSBI.WINDLL.kernel32.SetConsoleTextAttribute(self.WIN32_STREAM_HANDLE, final_color_code)
 
     def write(self, p_str):
         for segment in _RE_SPLIT.split(p_str):
@@ -811,9 +814,16 @@ class _WindowsStream(object):
                 continue
             if not _RE_SPLIT.match(segment):
                 # No color codes, print regular text.
-                self.original_stream.write(segment)
-                self.original_stream.flush()
+                self.ORIGINAL_STREAM.write(segment)
+                self.ORIGINAL_STREAM.flush()
                 continue
             for color_code in (int(c) for c in _RE_NUMBER_SEARCH.findall(segment)[0].split(';')):
                 if color_code in self.COMPILED_CODES:
                     self._set_color(self.COMPILED_CODES[color_code])
+
+
+class _WindowsStreamStdErr(_WindowsStreamStdOut):
+    """Replacement stream which overrides sys.stderr. Subclasses _WindowsStreamStdOut."""
+
+    ORIGINAL_STREAM = sys.stderr
+    WIN32_STREAM_HANDLE = _WindowsCSBI.HANDLE_STDERR
