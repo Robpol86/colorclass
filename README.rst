@@ -112,6 +112,11 @@ There are also a couple of helper attributes for all Color instances:
 Changelog
 ---------
 
+1.2.0
+`````
+
+* Convenience single-color methods added by `Marc Abramowitz <https://github.com/msabramo>`_.
+
 1.1.2
 `````
 

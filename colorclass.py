@@ -20,7 +20,7 @@ if os.name == 'nt':
 
 __author__ = '@Robpol86'
 __license__ = 'MIT'
-__version__ = '1.1.2'
+__version__ = '1.2.0'
 _BASE_CODES = {
     '/all': 0, 'b': 1, 'f': 2, 'i': 3, 'u': 4, 'flash': 5, 'outline': 6, 'negative': 7, 'invis': 8, 'strike': 9,
     '/b': 22, '/f': 22, '/i': 23, '/u': 24, '/flash': 25, '/outline': 26, '/negative': 27, '/invis': 28,
