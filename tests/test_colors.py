@@ -1,16 +1,22 @@
 # coding=utf-8
+"""Test methods using color codes."""
+
 import string
 import sys
+
+import pytest
 
 from colorclass import Color
 
 
-class Default(dict):
-    def __missing__(self, key):
+class _Default(dict):
+    @staticmethod
+    def __missing__(key):
         return key
 
 
 def test_chaining():
+    """Test chaining Color() instances."""
     value = Color('{red}test{/red}')
     value2 = Color('{red}{0}{/red}').format(value)
     assert '\033[31;31mtest\033[39;39m' == value2
@@ -26,6 +32,7 @@ def test_chaining():
 
 
 def test_format():
+    """Test .format() method."""
     assert '\033[31mtest\033[39m' == '{0}'.format(Color('{red}test{/red}'))
     assert '\033[31;31mtest\033[39;39m' == Color('{red}{0}{/red}').format(Color('{red}test{/red}'))
     assert '\033[31mtest\033[39m' == Color('{red}{0}{/red}').format('test')
@@ -38,6 +45,7 @@ def test_format():
 
 
 def test_encode_decode():
+    """Test string encoding/decoding."""
     def decode(i):
         return i.decode('utf-8') if sys.version_info[0] == 2 else i
 
@@ -52,6 +60,7 @@ def test_encode_decode():
 
 
 def test_common():
+    """Test common string methods."""
     value = Color('{red}this is a test.{/red}')
 
     assert Color('{red}this is a test.{/red}') == value
@@ -121,9 +130,9 @@ def test_common():
     assert '00001\033[31m1\033[39m' == Color('1{red}1{/red}').zfill(6)
 
 
+@pytest.mark.skipif('sys.version_info[0] != 2')
 def test_py2():
-    if sys.version_info[0] != 2:
-        return
+    """Test python2.x methods."""
     value = Color('{red}this is a test.{/red}')
 
     assert '\033[31m \033[39m' == Color('{red} {/red}', 'latin-1')
@@ -133,15 +142,15 @@ def test_py2():
     assert '\033[31mth3s 3s 1 t2st.\033[39m' == value.translate(string.maketrans('aeioum', '123456').decode('latin-1'))
 
 
+@pytest.mark.skipif('sys.version_info[0] != 3')
 def test_py3():
-    if sys.version_info[0] != 3:
-        return
+    """Test python3.x methods."""
     value = Color('{red}this is a test.{/red}')
 
     if hasattr(Color, 'casefold'):
         assert '\033[31mss\033[39m' == Color('{red}ß{/red}').casefold()
 
-    actual = Color('{red}{name} was born in {country}{/red}').format_map(Default(name='Guido'))
+    actual = Color('{red}{name} was born in {country}{/red}').format_map(_Default(name='Guido'))
     assert '\033[31mGuido was born in country\033[39m' == actual
 
     assert not Color('{red}var{/red}').isidentifier()

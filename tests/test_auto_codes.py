@@ -1,7 +1,10 @@
+"""Test auto codes."""
+
 import colorclass
 
 
 def test_toggle():
+    """Make sure toggles work."""
     colorclass.set_light_background()
     assert colorclass._AutoCodes.LIGHT_BACKGROUND
 
@@ -10,6 +13,7 @@ def test_toggle():
 
 
 def test_auto_codes():
+    """Make sure colors change when toggled."""
     codes = colorclass._AutoCodes()
 
     key = '{autoblack}{autored}{autogreen}{autoyellow}{autoblue}{automagenta}{autocyan}{autowhite}'

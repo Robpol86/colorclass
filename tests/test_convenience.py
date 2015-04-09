@@ -1,9 +1,11 @@
 # coding=utf-8
+"""Test convenience shortcut class methods."""
 
 from colorclass import Color
 
 
 def test_static_color_methods():
+    """Test all convenience methods."""
     assert Color('{autored}this is a test.{/autored}') == Color.red('this is a test.', auto=True)
     assert Color('{red}this is a test.{/red}') == Color.red('this is a test.')
     assert Color('{autobgred}this is a test.{/autobgred}') == Color.bgred('this is a test.', auto=True)

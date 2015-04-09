@@ -1,17 +1,22 @@
 # coding=utf-8
+"""Test methods without color codes."""
 
 import string
 import sys
 
+import pytest
+
 from colorclass import Color
 
 
-class Default(dict):
-    def __missing__(self, key):
+class _Default(dict):
+    @staticmethod
+    def __missing__(key):
         return key
 
 
 def test_chaining():
+    """Test chaining Color() instances."""
     value = Color('test')
     value2 = Color('{0}').format(value)
     assert 'test' == value2
@@ -27,6 +32,7 @@ def test_chaining():
 
 
 def test_format():
+    """Test .format() method."""
     assert 'test' == '{0}'.format(Color('test'))
     assert 'test' == Color('{0}').format(Color('test'))
     assert 'test' == Color('{0}').format('test')
@@ -37,6 +43,7 @@ def test_format():
 
 
 def test_encode_decode():
+    """Test string encoding/decoding."""
     def decode(i):
         return i.decode('utf-8') if sys.version_info[0] == 2 else i
 
@@ -49,6 +56,7 @@ def test_encode_decode():
 
 
 def test_common():
+    """Test common string methods."""
     value = Color('this is a test.')
 
     assert '' == Color()
@@ -108,9 +116,9 @@ def test_common():
     assert '000000' == Color().zfill(6)
 
 
+@pytest.mark.skipif('sys.version_info[0] != 2')
 def test_py2():
-    if sys.version_info[0] != 2:
-        return
+    """Test python2.x methods."""
     value = Color('this is a test.')
 
     assert ' ' == Color(' ', 'latin-1')
@@ -120,9 +128,9 @@ def test_py2():
     assert 'th3s 3s 1 t2st.' == value.translate(string.maketrans('aeiou', '12345').decode('latin-1'))
 
 
+@pytest.mark.skipif('sys.version_info[0] != 3')
 def test_py3():
-    if sys.version_info[0] != 3:
-        return
+    """Test python3.x methods."""
     value = Color('this is a test.')
 
     # assert '' == Color(b'', 'latin-1')  bytes has no .format().
@@ -131,7 +139,7 @@ def test_py3():
     if hasattr(Color, 'casefold'):
         assert 'ss' == Color('ß').casefold()
 
-    assert 'Guido was born in country' == Color('{name} was born in {country}').format_map(Default(name='Guido'))
+    assert 'Guido was born in country' == Color('{name} was born in {country}').format_map(_Default(name='Guido'))
 
     assert Color('var').isidentifier()
     assert not Color('var-').isidentifier()

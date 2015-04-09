@@ -1,7 +1,10 @@
+"""Test disable_all_colors()."""
+
 from colorclass import Color, disable_all_colors, set_dark_background
 
 
 def test_disabled():
+    """Test colors disabled."""
     disable_all_colors()
     assert 'test' == Color('{autored}test{/autored}')
     assert 'test' == Color('{red}test{/red}')
@@ -11,6 +14,7 @@ def test_disabled():
 
 
 def test_enabled():
+    """Test that colors may be re-enabled."""
     set_dark_background()
     assert '\033[91mtest\033[39m' == Color('{autored}test{/autored}')
     assert '\033[31mtest\033[39m' == Color('{red}test{/red}')

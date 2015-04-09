@@ -1,4 +1,7 @@
+"""Test Windows methods."""
+
 from __future__ import print_function
+
 import os
 import sys
 
@@ -10,6 +13,7 @@ pytestmark = pytest.mark.skipif(os.name != 'nt', reason='Requires windows.')
 
 
 def test_disable_safe():
+    """Test for safety."""
     original_stderr_id, original_stdout_id = id(sys.stderr), id(sys.stdout)
 
     assert not Windows.is_enabled()
@@ -26,6 +30,7 @@ def test_disable_safe():
 
 
 def test_enable_then_disable():
+    """Test enabling then disabling on Windows."""
     original_stderr_id, original_stdout_id = id(sys.stderr), id(sys.stdout)
 
     assert not Windows.is_enabled()
@@ -39,6 +44,7 @@ def test_enable_then_disable():
 
 
 def test():
+    """Basic test."""
     with Windows(auto_colors=True):
         print(Color('{autored}Test{/autored}.'))
         sys.stdout.flush()

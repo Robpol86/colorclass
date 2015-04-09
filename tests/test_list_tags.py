@@ -1,7 +1,10 @@
+"""Test list_tags()."""
+
 from colorclass import _AutoCodes, list_tags
 
 
 def test_main():
+    """Test list_tags()."""
     codes = _AutoCodes()
     tags = list_tags()
 

@@ -9,11 +9,11 @@ https://pypi.python.org/pypi/colorclass
 """
 
 import atexit
-from collections import Mapping
 import ctypes
 import os
 import re
 import sys
+from collections import Mapping
 
 if os.name == 'nt':
     import ctypes.wintypes
@@ -86,6 +86,7 @@ PARENT_CLASS = type(u'')
 
 class _AutoCodes(Mapping):
     """Read-only subclass of dict, resolves closing tags (based on colorclass.CODES) and automatic colors."""
+
     DISABLE_COLORS = False
     LIGHT_BACKGROUND = False
 
@@ -137,82 +138,82 @@ class _AutoCodes(Mapping):
 
     @property
     def autoblack(self):
-        """Returns automatic black foreground color depending on background color."""
+        """Return automatic black foreground color depending on background color."""
         return self.__dict['black' if _AutoCodes.LIGHT_BACKGROUND else 'hiblack']
 
     @property
     def autored(self):
-        """Returns automatic red foreground color depending on background color."""
+        """Return automatic red foreground color depending on background color."""
         return self.__dict['red' if _AutoCodes.LIGHT_BACKGROUND else 'hired']
 
     @property
     def autogreen(self):
-        """Returns automatic green foreground color depending on background color."""
+        """Return automatic green foreground color depending on background color."""
         return self.__dict['green' if _AutoCodes.LIGHT_BACKGROUND else 'higreen']
 
     @property
     def autoyellow(self):
-        """Returns automatic yellow foreground color depending on background color."""
+        """Return automatic yellow foreground color depending on background color."""
         return self.__dict['yellow' if _AutoCodes.LIGHT_BACKGROUND else 'hiyellow']
 
     @property
     def autoblue(self):
-        """Returns automatic blue foreground color depending on background color."""
+        """Return automatic blue foreground color depending on background color."""
         return self.__dict['blue' if _AutoCodes.LIGHT_BACKGROUND else 'hiblue']
 
     @property
     def automagenta(self):
-        """Returns automatic magenta foreground color depending on background color."""
+        """Return automatic magenta foreground color depending on background color."""
         return self.__dict['magenta' if _AutoCodes.LIGHT_BACKGROUND else 'himagenta']
 
     @property
     def autocyan(self):
-        """Returns automatic cyan foreground color depending on background color."""
+        """Return automatic cyan foreground color depending on background color."""
         return self.__dict['cyan' if _AutoCodes.LIGHT_BACKGROUND else 'hicyan']
 
     @property
     def autowhite(self):
-        """Returns automatic white foreground color depending on background color."""
+        """Return automatic white foreground color depending on background color."""
         return self.__dict['white' if _AutoCodes.LIGHT_BACKGROUND else 'hiwhite']
 
     @property
     def autobgblack(self):
-        """Returns automatic black background color depending on background color."""
+        """Return automatic black background color depending on background color."""
         return self.__dict['bgblack' if _AutoCodes.LIGHT_BACKGROUND else 'hibgblack']
 
     @property
     def autobgred(self):
-        """Returns automatic red background color depending on background color."""
+        """Return automatic red background color depending on background color."""
         return self.__dict['bgred' if _AutoCodes.LIGHT_BACKGROUND else 'hibgred']
 
     @property
     def autobggreen(self):
-        """Returns automatic green background color depending on background color."""
+        """Return automatic green background color depending on background color."""
         return self.__dict['bggreen' if _AutoCodes.LIGHT_BACKGROUND else 'hibggreen']
 
     @property
     def autobgyellow(self):
-        """Returns automatic yellow background color depending on background color."""
+        """Return automatic yellow background color depending on background color."""
         return self.__dict['bgyellow' if _AutoCodes.LIGHT_BACKGROUND else 'hibgyellow']
 
     @property
     def autobgblue(self):
-        """Returns automatic blue background color depending on background color."""
+        """Return automatic blue background color depending on background color."""
         return self.__dict['bgblue' if _AutoCodes.LIGHT_BACKGROUND else 'hibgblue']
 
     @property
     def autobgmagenta(self):
-        """Returns automatic magenta background color depending on background color."""
+        """Return automatic magenta background color depending on background color."""
         return self.__dict['bgmagenta' if _AutoCodes.LIGHT_BACKGROUND else 'hibgmagenta']
 
     @property
     def autobgcyan(self):
-        """Returns automatic cyan background color depending on background color."""
+        """Return automatic cyan background color depending on background color."""
         return self.__dict['bgcyan' if _AutoCodes.LIGHT_BACKGROUND else 'hibgcyan']
 
     @property
     def autobgwhite(self):
-        """Returns automatic white background color depending on background color."""
+        """Return automatic white background color depending on background color."""
         return self.__dict['bgwhite' if _AutoCodes.LIGHT_BACKGROUND else 'hibgwhite']
 
 
@@ -236,7 +237,7 @@ def _pad_input(incoming):
 
 
 def _parse_input(incoming):
-    """Performs the actual conversion of tags to ANSI escaped codes.
+    """Perform the actual conversion of tags to ANSI escaped codes.
 
     Provides a version of the input without any colors for len() and other methods.
 
@@ -274,19 +275,19 @@ def disable_all_colors():
 
 
 def set_light_background():
-    """Chooses dark colors for all 'auto'-prefixed codes for readability on light backgrounds."""
+    """Choose dark colors for all 'auto'-prefixed codes for readability on light backgrounds."""
     _AutoCodes.DISABLE_COLORS = False
     _AutoCodes.LIGHT_BACKGROUND = True
 
 
 def set_dark_background():
-    """Chooses dark colors for all 'auto'-prefixed codes for readability on light backgrounds."""
+    """Choose dark colors for all 'auto'-prefixed codes for readability on light backgrounds."""
     _AutoCodes.DISABLE_COLORS = False
     _AutoCodes.LIGHT_BACKGROUND = False
 
 
 def list_tags():
-    """Lists the available tags.
+    """List the available tags.
 
     Returns:
     Tuple of tuples. Child tuples are four items: ('opening tag', 'closing tag', main ansi value, closing ansi value).
@@ -317,6 +318,7 @@ class ColorBytes(bytes):
     """Str (bytes in Python3) subclass, .decode() overridden to return Color() instance."""
 
     def decode(*args, **kwargs):
+        """Similar to str() method of the same name, returns Color() instance."""
         return Color(super(ColorBytes, args[0]).decode(*args[1:], **kwargs))
 
 
@@ -330,58 +332,72 @@ class Color(PARENT_CLASS):
 
     @classmethod
     def red(cls, s, auto=False):
+        """Color-code entire string."""
         return cls.colorize('red', s, auto=auto)
 
     @classmethod
     def bgred(cls, s, auto=False):
+        """Color-code entire string."""
         return cls.colorize('bgred', s, auto=auto)
 
     @classmethod
     def green(cls, s, auto=False):
+        """Color-code entire string."""
         return cls.colorize('green', s, auto=auto)
 
     @classmethod
     def bggreen(cls, s, auto=False):
+        """Color-code entire string."""
         return cls.colorize('bggreen', s, auto=auto)
 
     @classmethod
     def blue(cls, s, auto=False):
+        """Color-code entire string."""
         return cls.colorize('blue', s, auto=auto)
 
     @classmethod
     def bgblue(cls, s, auto=False):
+        """Color-code entire string."""
         return cls.colorize('bgblue', s, auto=auto)
 
     @classmethod
     def yellow(cls, s, auto=False):
+        """Color-code entire string."""
         return cls.colorize('yellow', s, auto=auto)
 
     @classmethod
     def bgyellow(cls, s, auto=False):
+        """Color-code entire string."""
         return cls.colorize('bgyellow', s, auto=auto)
 
     @classmethod
     def cyan(cls, s, auto=False):
+        """Color-code entire string."""
         return cls.colorize('cyan', s, auto=auto)
 
     @classmethod
     def bgcyan(cls, s, auto=False):
+        """Color-code entire string."""
         return cls.colorize('bgcyan', s, auto=auto)
 
     @classmethod
     def magenta(cls, s, auto=False):
+        """Color-code entire string."""
         return cls.colorize('magenta', s, auto=auto)
 
     @classmethod
     def bgmagenta(cls, s, auto=False):
+        """Color-code entire string."""
         return cls.colorize('bgmagenta', s, auto=auto)
 
     @classmethod
     def colorize(cls, color, s, auto=False):
+        """Color-code entire string using specified color."""
         tag = '{0}{1}'.format('auto' if auto else '', color)
         return cls('{%s}%s{/%s}' % (tag, s, tag))
 
     def __new__(cls, *args, **kwargs):
+        """Constructor."""
         parent_class = cls.__bases__[0]
         value_markup = args[0] if args else parent_class()
         value_colors, value_no_colors = _parse_input(value_markup)
@@ -394,9 +410,11 @@ class Color(PARENT_CLASS):
         return obj
 
     def __len__(self):
+        """Return length of string without color codes (what users expect)."""
         return self.value_no_colors.__len__()
 
     def capitalize(self):
+        """Similar to str() method of the same name, returns Color() instance."""
         split = _RE_SPLIT.split(self.value_colors)
         for i in range(len(split)):
             if _RE_SPLIT.match(split[i]):
@@ -405,6 +423,7 @@ class Color(PARENT_CLASS):
         return Color().join(split)
 
     def center(self, width, fillchar=None):
+        """Similar to str() method of the same name, returns Color() instance."""
         if fillchar is not None:
             result = PARENT_CLASS(self.value_no_colors).center(width, fillchar)
         else:
@@ -412,51 +431,67 @@ class Color(PARENT_CLASS):
         return result.replace(self.value_no_colors, self.value_colors)
 
     def count(self, *args, **kwargs):
+        """Similar to str() method of the same name."""
         return PARENT_CLASS(self.value_no_colors).count(*args, **kwargs)
 
     def endswith(self, *args, **kwargs):
+        """Similar to str() method of the same name."""
         return PARENT_CLASS(self.value_no_colors).endswith(*args, **kwargs)
 
     def encode(*args, **kwargs):
+        """Similar to str() method of the same name, returns ColorBytes() instance."""
         return ColorBytes(super(Color, args[0]).encode(*args[1:], **kwargs))
 
     def decode(*args, **kwargs):
+        """Similar to str() method of the same name, returns Color() instance."""
         return Color(super(Color, args[0]).decode(*args[1:], **kwargs))
 
     def find(self, *args, **kwargs):
+        """Similar to str() method of the same name."""
         return PARENT_CLASS(self.value_no_colors).find(*args, **kwargs)
 
     def format(*args, **kwargs):
+        """Similar to str() method of the same name, returns Color() instance."""
         return Color(super(Color, args[0]).format(*args[1:], **kwargs))
 
     def index(self, *args, **kwargs):
+        """Similar to str() method of the same name."""
         return PARENT_CLASS(self.value_no_colors).index(*args, **kwargs)
 
     def isalnum(self):
+        """Similar to str() method of the same name."""
         return PARENT_CLASS(self.value_no_colors).isalnum()
 
     def isalpha(self):
+        """Similar to str() method of the same name."""
         return PARENT_CLASS(self.value_no_colors).isalpha()
 
     def isdecimal(self):
+        """Similar to str() method of the same name."""
         return PARENT_CLASS(self.value_no_colors).isdecimal()
 
     def isdigit(self):
+        """Similar to str() method of the same name."""
         return PARENT_CLASS(self.value_no_colors).isdigit()
 
     def isnumeric(self):
+        """Similar to str() method of the same name."""
         return PARENT_CLASS(self.value_no_colors).isnumeric()
 
     def isspace(self):
+        """Similar to str() method of the same name."""
         return PARENT_CLASS(self.value_no_colors).isspace()
 
     def istitle(self):
+        """Similar to str() method of the same name."""
         return PARENT_CLASS(self.value_no_colors).istitle()
 
     def isupper(self):
+        """Similar to str() method of the same name."""
         return PARENT_CLASS(self.value_no_colors).isupper()
 
     def ljust(self, width, fillchar=None):
+        """Similar to str() method of the same name, returns Color() instance."""
         if fillchar is not None:
             result = PARENT_CLASS(self.value_no_colors).ljust(width, fillchar)
         else:
@@ -464,12 +499,15 @@ class Color(PARENT_CLASS):
         return result.replace(self.value_no_colors, self.value_colors)
 
     def rfind(self, *args, **kwargs):
+        """Similar to str() method of the same name."""
         return PARENT_CLASS(self.value_no_colors).rfind(*args, **kwargs)
 
     def rindex(self, *args, **kwargs):
+        """Similar to str() method of the same name."""
         return PARENT_CLASS(self.value_no_colors).rindex(*args, **kwargs)
 
     def rjust(self, width, fillchar=None):
+        """Similar to str() method of the same name, returns Color() instance."""
         if fillchar is not None:
             result = PARENT_CLASS(self.value_no_colors).rjust(width, fillchar)
         else:
@@ -477,12 +515,15 @@ class Color(PARENT_CLASS):
         return result.replace(self.value_no_colors, self.value_colors)
 
     def splitlines(self):
+        """Similar to str() method of the same name, returns Color() instances in a list."""
         return [Color(l) for l in PARENT_CLASS(self.value_colors).splitlines()]
 
     def startswith(self, *args, **kwargs):
+        """Similar to str() method of the same name."""
         return PARENT_CLASS(self.value_no_colors).startswith(*args, **kwargs)
 
     def swapcase(self):
+        """Similar to str() method of the same name, returns Color() instance."""
         split = _RE_SPLIT.split(self.value_colors)
         for i in range(len(split)):
             if _RE_SPLIT.match(split[i]):
@@ -491,6 +532,7 @@ class Color(PARENT_CLASS):
         return Color().join(split)
 
     def title(self):
+        """Similar to str() method of the same name, returns Color() instance."""
         split = _RE_SPLIT.split(self.value_colors)
         for i in range(len(split)):
             if _RE_SPLIT.match(split[i]):
@@ -499,6 +541,7 @@ class Color(PARENT_CLASS):
         return Color().join(split)
 
     def translate(self, table):
+        """Similar to str() method of the same name, returns Color() instance."""
         split = _RE_SPLIT.split(self.value_colors)
         for i in range(len(split)):
             if _RE_SPLIT.match(split[i]):
@@ -507,6 +550,7 @@ class Color(PARENT_CLASS):
         return Color().join(split)
 
     def upper(self):
+        """Similar to str() method of the same name, returns Color() instance."""
         split = _RE_SPLIT.split(self.value_colors)
         for i in range(len(split)):
             if _RE_SPLIT.match(split[i]):
@@ -515,6 +559,7 @@ class Color(PARENT_CLASS):
         return Color().join(split)
 
     def zfill(self, width):
+        """Similar to str() method of the same name, returns Color() instance."""
         if not self.value_no_colors:
             return PARENT_CLASS().zfill(width)
 
@@ -564,12 +609,12 @@ class Windows(object):
 
     @staticmethod
     def is_enabled():
-        """Returns True if either stderr or stdout has colors enabled."""
+        """Return True if either stderr or stdout has colors enabled."""
         return hasattr(sys.stderr, 'ORIGINAL_STREAM') or hasattr(sys.stdout, 'ORIGINAL_STREAM')
 
     @staticmethod
     def enable(auto_colors=False, reset_atexit=False):
-        """Enables color text with print() or sys.stdout.write() (stderr too).
+        """Enable color text with print() or sys.stdout.write() (stderr too).
 
         Keyword arguments:
         auto_colors -- automatically selects dark or light colors based on current terminal's background color. Only
@@ -602,17 +647,20 @@ class Windows(object):
         return True
 
     def __init__(self, auto_colors=False):
+        """Constructor."""
         self.auto_colors = auto_colors
 
     def __enter__(self):
+        """Context manager, enables colors on Windows."""
         Windows.enable(auto_colors=self.auto_colors)
 
     def __exit__(self, *_):
+        """Context manager, disabled colors on Windows."""
         Windows.disable()
 
 
 class _WindowsCSBI(object):
-    """Interfaces with Windows CONSOLE_SCREEN_BUFFER_INFO API/DLL calls. Gets info for stderr and stdout.
+    """Interface with Windows CONSOLE_SCREEN_BUFFER_INFO API/DLL calls. Gets info for stderr and stdout.
 
     References:
         http://msdn.microsoft.com/en-us/library/windows/desktop/ms683231
@@ -633,23 +681,27 @@ class _WindowsCSBI(object):
 
     @staticmethod
     def _define_csbi():
-        """Defines structs and populates _WindowsCSBI.CSBI."""
+        """Define structs and populates _WindowsCSBI.CSBI."""
         if _WindowsCSBI.CSBI is not None:
             return
 
         class COORD(ctypes.Structure):
-            """Windows COORD structure. http://msdn.microsoft.com/en-us/library/windows/desktop/ms682119"""
+            """Windows COORD structure. http://msdn.microsoft.com/en-us/library/windows/desktop/ms682119."""
+
             _fields_ = [('X', ctypes.c_short), ('Y', ctypes.c_short)]
 
         class SmallRECT(ctypes.Structure):
-            """Windows SMALL_RECT structure. http://msdn.microsoft.com/en-us/library/windows/desktop/ms686311"""
+            """Windows SMALL_RECT structure. http://msdn.microsoft.com/en-us/library/windows/desktop/ms686311."""
+
             _fields_ = [('Left', ctypes.c_short), ('Top', ctypes.c_short), ('Right', ctypes.c_short),
                         ('Bottom', ctypes.c_short)]
 
         class ConsoleScreenBufferInfo(ctypes.Structure):
             """Windows CONSOLE_SCREEN_BUFFER_INFO structure.
+
             http://msdn.microsoft.com/en-us/library/windows/desktop/ms682093
             """
+
             _fields_ = [
                 ('dwSize', COORD),
                 ('dwCursorPosition', COORD),
@@ -662,7 +714,7 @@ class _WindowsCSBI(object):
 
     @staticmethod
     def initialize():
-        """Initializes the WINDLL resource and populated the CSBI class variable."""
+        """Initialize the WINDLL resource and populated the CSBI class variable."""
         _WindowsCSBI._define_csbi()
         _WindowsCSBI.HANDLE_STDERR = _WindowsCSBI.HANDLE_STDERR or _WindowsCSBI.WINDLL.kernel32.GetStdHandle(-12)
         _WindowsCSBI.HANDLE_STDOUT = _WindowsCSBI.HANDLE_STDOUT or _WindowsCSBI.WINDLL.kernel32.GetStdHandle(-11)
@@ -761,7 +813,7 @@ class _WindowsStreamStdOut(object):
         return getattr(self.ORIGINAL_STREAM, item)
 
     def _get_colors(self):
-        """Returns a tuple of two integers representing current colors: (foreground, background)."""
+        """Return a tuple of two integers representing current colors: (foreground, background)."""
         try:
             csbi = _WindowsCSBI.get_info(self.WIN32_STREAM_HANDLE)
             return csbi['fg_color'], csbi['bg_color']
@@ -769,11 +821,11 @@ class _WindowsStreamStdOut(object):
             return 7, 0
 
     def _reset_colors(self):
-        """Sets the foreground and background colors to their original values (when class was instantiated)."""
+        """Set the foreground and background colors to their original values (when class was instantiated)."""
         self._set_color(-33)
 
     def _set_color(self, color_code):
-        """Changes the foreground and background colors for subsequently printed characters.
+        """Change the foreground and background colors for subsequently printed characters.
 
         Since setting a color requires including both foreground and background codes (merged), setting just the
         foreground color resets the background color to black, and vice versa.

@@ -14,15 +14,18 @@ Options:
 """
 
 from __future__ import print_function
+
 import os
 
 from docopt import docopt
+
 from colorclass import Color, disable_all_colors, set_light_background, Windows
 
 OPTIONS = docopt(__doc__) if __name__ == '__main__' else dict()
 
 
 def main():
+    """Main function called upon script execution."""
     if OPTIONS.get('--no-colors'):
         disable_all_colors()
     elif os.name == 'nt':
