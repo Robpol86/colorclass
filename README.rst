@@ -35,8 +35,8 @@ Tested on Windows XP and Windows 10 technical preview.
    :target: https://pypi.python.org/pypi/colorclass/
    :alt: Downloads
 
-`Quickstart`_
-=============
+Quickstart
+==========
 
 Install:
 
@@ -44,8 +44,8 @@ Install:
 
     pip install colorclass
 
-`Example Implementation`_
-=========================
+Example Implementation
+======================
 
 .. image:: https://github.com/Robpol86/colorclass/raw/master/example.png?raw=true
    :alt: Example Script Screenshot
@@ -55,8 +55,8 @@ Install:
 
 Source code for the example code is: `example.py <https://github.com/Robpol86/colorclass/blob/master/example.py>`_
 
-`Usage`_
-========
+Usage
+=====
 
 Different colors are chosen using curly-bracket tags, such as ``{red}{/red}``. For a list of available colors, call
 ``colorclass.list_tags()``.
@@ -106,50 +106,50 @@ There are also a couple of helper attributes for all Color instances:
     color_string.value_no_colors
     'Test'
 
-`Changelog`_
-============
+Changelog
+=========
 
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
-`1.2.0 - 2015-03-19`_
----------------------
+1.2.0 - 2015-03-19
+------------------
 
 Added
     * Convenience single-color methods by `Marc Abramowitz <https://github.com/msabramo>`_.
 
-`1.1.2 - 2015-01-07`_
----------------------
+1.1.2 - 2015-01-07
+------------------
 
 Fixed
     * Maintaining ``Color`` type through ``.encode()`` and ``.decode()`` chains.
 
-`1.1.1 - 2014-11-03`_
----------------------
+1.1.1 - 2014-11-03
+------------------
 
 Fixed
     * Python 2.7 64-bit original colors bug on Windows.
     * resetting colors when ``reset_atexit`` is True.
     * Improved sorting of ``list_tags()``.
 
-`1.1.0 - 2014-11-01`_
----------------------
+1.1.0 - 2014-11-01
+------------------
 
 Added
     * Native Windows support and automatic background colors.
 
-`1.0.2 - 2014-10-20`_
----------------------
+1.0.2 - 2014-10-20
+------------------
 
 Added
     * Ability to disable/strip out all colors.
 
-`1.0.1 - 2014-09-11`_
----------------------
+1.0.1 - 2014-09-11
+------------------
 
 Fixed
     * ``splitlines()`` method.
 
-`1.0.0 - 2014-09-01`_
----------------------
+1.0.0 - 2014-09-01
+------------------
 
 * Initial release.
