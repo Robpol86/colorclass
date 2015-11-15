@@ -10,30 +10,28 @@ this can be done automatically if you call ``Windows.enable(auto_colors=True)``.
 
 In Python2.x this library subclasses ``unicode``, while on Python3.x it subclasses ``str``.
 
-* Python 2.6, 2.7, PyPy, PyPy3, 3.3, and 3.4 supported on Linux and OS X.
-* Python 2.7, 3.3, and 3.4 supported on Windows (both 32 and 64 bit versions of Python).
-
-Tested on Windows XP and Windows 10 technical preview.
+* Python 2.6, 2.7, PyPy, PyPy3, 3.3, 3.4, and 3.5 supported on Linux and OS X.
+* Python 2.7, 3.3, 3.4, and 3.5 supported on Windows (both 32 and 64 bit versions of Python).
 
 .. image:: https://img.shields.io/appveyor/ci/Robpol86/colorclass/master.svg?style=flat-square&label=AppVeyor%20CI
-   :target: https://ci.appveyor.com/project/Robpol86/colorclass
-   :alt: Build Status Windows
+    :target: https://ci.appveyor.com/project/Robpol86/colorclass
+    :alt: Build Status Windows
 
 .. image:: https://img.shields.io/travis/Robpol86/colorclass/master.svg?style=flat-square&label=Travis%20CI
-   :target: https://travis-ci.org/Robpol86/colorclass
-   :alt: Build Status
+    :target: https://travis-ci.org/Robpol86/colorclass
+    :alt: Build Status
 
-.. image:: https://img.shields.io/codecov/c/github/Robpol86/colorclass/master.svg?style=flat-square&label=Codecov
-   :target: https://codecov.io/github/Robpol86/colorclass
-   :alt: Coverage Status
+.. image:: https://img.shields.io/coveralls/Robpol86/colorclass/master.svg?style=flat-square&label=Coveralls
+    :target: https://coveralls.io/github/Robpol86/colorclass
+    :alt: Coverage Status
 
 .. image:: https://img.shields.io/pypi/v/colorclass.svg?style=flat-square&label=Latest
-   :target: https://pypi.python.org/pypi/colorclass/
-   :alt: Latest Version
+    :target: https://pypi.python.org/pypi/colorclass
+    :alt: Latest Version
 
 .. image:: https://img.shields.io/pypi/dm/colorclass.svg?style=flat-square&label=PyPI%20Downloads
-   :target: https://pypi.python.org/pypi/colorclass/
-   :alt: Downloads
+    :target: https://pypi.python.org/pypi/colorclass
+    :alt: Downloads
 
 Quickstart
 ==========
