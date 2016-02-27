@@ -15,9 +15,9 @@ import re
 import sys
 from collections import Mapping
 
-if os.name == 'nt':
-    import ctypes.wintypes
-
+__author__ = '@Robpol86'
+__license__ = 'MIT'
+__version__ = '1.2.0'
 _BASE_CODES = {
     '/all': 0, 'b': 1, 'f': 2, 'i': 3, 'u': 4, 'flash': 5, 'outline': 6, 'negative': 7, 'invis': 8, 'strike': 9,
     '/b': 22, '/f': 22, '/i': 23, '/u': 24, '/flash': 25, '/outline': 26, '/negative': 27, '/invis': 28,
@@ -255,8 +255,8 @@ def _parse_input(incoming):
     groups_compiled = ['\033[{0}m'.format(';'.join(g)) for g in groups_simplified]  # Final codes.
     assert len(groups_compiled) == len(groups)  # For testing.
     output_colors_simplified = output_colors
-    for i in range(len(groups)):
-        output_colors_simplified = output_colors_simplified.replace(groups[i], groups_compiled[i])
+    for i, group in enumerate(groups):
+        output_colors_simplified = output_colors_simplified.replace(group, groups_compiled[i])
     output_no_colors = _RE_SPLIT.sub('', output_colors_simplified)
 
     # Strip any remaining color codes.
@@ -639,7 +639,7 @@ class Windows(object):
 
         # Reset on exit if requested.
         if reset_atexit:
-            atexit.register(lambda: Windows.disable())
+            atexit.register(Windows.disable)
 
         return True
 
@@ -675,6 +675,7 @@ class _WindowsCSBI(object):
     HANDLE_STDERR = None
     HANDLE_STDOUT = None
     WINDLL = ctypes.LibraryLoader(getattr(ctypes, 'WinDLL', None))
+    WINTYPES = __import__('ctypes.wintypes').wintypes if os.name == 'nt' else None
 
     @staticmethod
     def _define_csbi():
@@ -702,7 +703,7 @@ class _WindowsCSBI(object):
             _fields_ = [
                 ('dwSize', COORD),
                 ('dwCursorPosition', COORD),
-                ('wAttributes', ctypes.wintypes.WORD),
+                ('wAttributes', _WindowsCSBI.WINTYPES.WORD),
                 ('srWindow', SmallRECT),
                 ('dwMaximumWindowSize', COORD)
             ]
@@ -718,11 +719,11 @@ class _WindowsCSBI(object):
         if _WindowsCSBI.WINDLL.kernel32.GetConsoleScreenBufferInfo.argtypes:
             return
 
-        _WindowsCSBI.WINDLL.kernel32.GetStdHandle.argtypes = [ctypes.wintypes.DWORD]
-        _WindowsCSBI.WINDLL.kernel32.GetStdHandle.restype = ctypes.wintypes.HANDLE
-        _WindowsCSBI.WINDLL.kernel32.GetConsoleScreenBufferInfo.restype = ctypes.wintypes.BOOL
+        _WindowsCSBI.WINDLL.kernel32.GetStdHandle.argtypes = [_WindowsCSBI.WINTYPES.DWORD]
+        _WindowsCSBI.WINDLL.kernel32.GetStdHandle.restype = _WindowsCSBI.WINTYPES.HANDLE
+        _WindowsCSBI.WINDLL.kernel32.GetConsoleScreenBufferInfo.restype = _WindowsCSBI.WINTYPES.BOOL
         _WindowsCSBI.WINDLL.kernel32.GetConsoleScreenBufferInfo.argtypes = [
-            ctypes.wintypes.HANDLE, ctypes.POINTER(_WindowsCSBI.CSBI)
+            _WindowsCSBI.WINTYPES.HANDLE, ctypes.POINTER(_WindowsCSBI.CSBI)
         ]
 
     @staticmethod
