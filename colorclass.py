@@ -82,15 +82,26 @@ PARENT_CLASS = type(u'')
 
 
 class _AutoCodes(Mapping):
-    """Read-only subclass of dict, resolves closing tags (based on colorclass.CODES) and automatic colors."""
+    """Read-only subclass of dict, resolves closing tags (based on colorclass.CODES) and automatic colors.
+
+    :cvar bool DISABLE_COLORS: Disable colors (strip color codes).
+    :cvar bool LIGHT_BACKGROUND: Use low intensity color codes.
+    """
 
     DISABLE_COLORS = False
     LIGHT_BACKGROUND = False
 
     def __init__(self):
+        """Constructor."""
         self.__dict = _BASE_CODES.copy()
 
     def __getitem__(self, item):
+        """Return value for key.
+
+        :param str item: Key.
+
+        :return: Color code integer.
+        """
         if item == 'autoblack':
             answer = self.autoblack
         elif item == 'autored':
@@ -128,9 +139,11 @@ class _AutoCodes(Mapping):
         return answer
 
     def __iter__(self):
+        """Iterate dictionary."""
         return iter(self.__dict)
 
     def __len__(self):
+        """Dictionary length."""
         return len(self.__dict)
 
     @property
@@ -219,11 +232,10 @@ def _pad_input(incoming):
 
     Example: '{0}{autored}' becomes '{{0}}{autored}'.
 
-    Positional arguments:
-    incoming -- the input unicode value.
+    :param str incoming: The input unicode value.
 
-    Returns:
-    Padded unicode value.
+    :return: Padded unicode value.
+    :rtype: str
     """
     incoming_expanded = incoming.replace('{', '{{').replace('}', '}}')
     for key in _BASE_CODES:
@@ -238,11 +250,10 @@ def _parse_input(incoming):
 
     Provides a version of the input without any colors for len() and other methods.
 
-    Positional arguments:
-    incoming -- the input unicode value.
+    :param str incoming: The input unicode value.
 
-    Returns:
-    2-item tuple. First item is the parsed output. Second item is a version of the input without any colors.
+    :return: 2-item tuple. First item is the parsed output. Second item is a version of the input without any colors.
+    :rtype: tuple
     """
     codes = dict((k, v) for k, v in _AutoCodes().items() if '{%s}' % k in incoming)
     color_codes = dict((k, '' if _AutoCodes.DISABLE_COLORS else '\033[{0}m'.format(v)) for k, v in codes.items())
@@ -286,8 +297,8 @@ def set_dark_background():
 def list_tags():
     """List the available tags.
 
-    Returns:
-    Tuple of tuples. Child tuples are four items: ('opening tag', 'closing tag', main ansi value, closing ansi value).
+    :return: Tuple of tuples. Child tuples are four items: opening tag, closing tag, main ansi value, closing ansi value
+    :rtype: tuple
     """
     codes = _AutoCodes()
     grouped = set([(k, '/{0}'.format(k), codes[k], codes['/{0}'.format(k)]) for k in codes if not k.startswith('/')])
@@ -328,70 +339,162 @@ class Color(PARENT_CLASS):
     """
 
     @classmethod
-    def red(cls, s, auto=False):
-        """Color-code entire string."""
-        return cls.colorize('red', s, auto=auto)
+    def red(cls, string, auto=False):
+        """Color-code entire string.
+
+        :param str string: String to colorize.
+        :param bool auto: Enable auto-color (dark/light terminal).
+
+        :return: Class instance for colorized string.
+        :rtype: Color
+        """
+        return cls.colorize('red', string, auto=auto)
 
     @classmethod
-    def bgred(cls, s, auto=False):
-        """Color-code entire string."""
-        return cls.colorize('bgred', s, auto=auto)
+    def bgred(cls, string, auto=False):
+        """Color-code entire string.
+
+        :param str string: String to colorize.
+        :param bool auto: Enable auto-color (dark/light terminal).
+
+        :return: Class instance for colorized string.
+        :rtype: Color
+        """
+        return cls.colorize('bgred', string, auto=auto)
 
     @classmethod
-    def green(cls, s, auto=False):
-        """Color-code entire string."""
-        return cls.colorize('green', s, auto=auto)
+    def green(cls, string, auto=False):
+        """Color-code entire string.
+
+        :param str string: String to colorize.
+        :param bool auto: Enable auto-color (dark/light terminal).
+
+        :return: Class instance for colorized string.
+        :rtype: Color
+        """
+        return cls.colorize('green', string, auto=auto)
 
     @classmethod
-    def bggreen(cls, s, auto=False):
-        """Color-code entire string."""
-        return cls.colorize('bggreen', s, auto=auto)
+    def bggreen(cls, string, auto=False):
+        """Color-code entire string.
+
+        :param str string: String to colorize.
+        :param bool auto: Enable auto-color (dark/light terminal).
+
+        :return: Class instance for colorized string.
+        :rtype: Color
+        """
+        return cls.colorize('bggreen', string, auto=auto)
 
     @classmethod
-    def blue(cls, s, auto=False):
-        """Color-code entire string."""
-        return cls.colorize('blue', s, auto=auto)
+    def blue(cls, string, auto=False):
+        """Color-code entire string.
+
+        :param str string: String to colorize.
+        :param bool auto: Enable auto-color (dark/light terminal).
+
+        :return: Class instance for colorized string.
+        :rtype: Color
+        """
+        return cls.colorize('blue', string, auto=auto)
 
     @classmethod
-    def bgblue(cls, s, auto=False):
-        """Color-code entire string."""
-        return cls.colorize('bgblue', s, auto=auto)
+    def bgblue(cls, string, auto=False):
+        """Color-code entire string.
+
+        :param str string: String to colorize.
+        :param bool auto: Enable auto-color (dark/light terminal).
+
+        :return: Class instance for colorized string.
+        :rtype: Color
+        """
+        return cls.colorize('bgblue', string, auto=auto)
 
     @classmethod
-    def yellow(cls, s, auto=False):
-        """Color-code entire string."""
-        return cls.colorize('yellow', s, auto=auto)
+    def yellow(cls, string, auto=False):
+        """Color-code entire string.
+
+        :param str string: String to colorize.
+        :param bool auto: Enable auto-color (dark/light terminal).
+
+        :return: Class instance for colorized string.
+        :rtype: Color
+        """
+        return cls.colorize('yellow', string, auto=auto)
 
     @classmethod
-    def bgyellow(cls, s, auto=False):
-        """Color-code entire string."""
-        return cls.colorize('bgyellow', s, auto=auto)
+    def bgyellow(cls, string, auto=False):
+        """Color-code entire string.
+
+        :param str string: String to colorize.
+        :param bool auto: Enable auto-color (dark/light terminal).
+
+        :return: Class instance for colorized string.
+        :rtype: Color
+        """
+        return cls.colorize('bgyellow', string, auto=auto)
 
     @classmethod
-    def cyan(cls, s, auto=False):
-        """Color-code entire string."""
-        return cls.colorize('cyan', s, auto=auto)
+    def cyan(cls, string, auto=False):
+        """Color-code entire string.
+
+        :param str string: String to colorize.
+        :param bool auto: Enable auto-color (dark/light terminal).
+
+        :return: Class instance for colorized string.
+        :rtype: Color
+        """
+        return cls.colorize('cyan', string, auto=auto)
 
     @classmethod
-    def bgcyan(cls, s, auto=False):
-        """Color-code entire string."""
-        return cls.colorize('bgcyan', s, auto=auto)
+    def bgcyan(cls, string, auto=False):
+        """Color-code entire string.
+
+        :param str string: String to colorize.
+        :param bool auto: Enable auto-color (dark/light terminal).
+
+        :return: Class instance for colorized string.
+        :rtype: Color
+        """
+        return cls.colorize('bgcyan', string, auto=auto)
 
     @classmethod
-    def magenta(cls, s, auto=False):
-        """Color-code entire string."""
-        return cls.colorize('magenta', s, auto=auto)
+    def magenta(cls, string, auto=False):
+        """Color-code entire string.
+
+        :param str string: String to colorize.
+        :param bool auto: Enable auto-color (dark/light terminal).
+
+        :return: Class instance for colorized string.
+        :rtype: Color
+        """
+        return cls.colorize('magenta', string, auto=auto)
 
     @classmethod
-    def bgmagenta(cls, s, auto=False):
-        """Color-code entire string."""
-        return cls.colorize('bgmagenta', s, auto=auto)
+    def bgmagenta(cls, string, auto=False):
+        """Color-code entire string.
+
+        :param str string: String to colorize.
+        :param bool auto: Enable auto-color (dark/light terminal).
+
+        :return: Class instance for colorized string.
+        :rtype: Color
+        """
+        return cls.colorize('bgmagenta', string, auto=auto)
 
     @classmethod
-    def colorize(cls, color, s, auto=False):
-        """Color-code entire string using specified color."""
+    def colorize(cls, color, string, auto=False):
+        """Color-code entire string using specified color.
+
+        :param str color: Color of string.
+        :param str string: String to colorize.
+        :param bool auto: Enable auto-color (dark/light terminal).
+
+        :return: Class instance for colorized string.
+        :rtype: Color
+        """
         tag = '{0}{1}'.format('auto' if auto else '', color)
-        return cls('{%s}%s{/%s}' % (tag, s, tag))
+        return cls('{%s}%s{/%s}' % (tag, string, tag))
 
     def __new__(cls, *args, **kwargs):
         """Constructor."""
@@ -413,14 +516,18 @@ class Color(PARENT_CLASS):
     def capitalize(self):
         """Similar to str() method of the same name, returns Color() instance."""
         split = _RE_SPLIT.split(self.value_colors)
-        for i in range(len(split)):
-            if _RE_SPLIT.match(split[i]):
+        for i, item in enumerate(split):
+            if _RE_SPLIT.match(item):
                 continue
-            split[i] = PARENT_CLASS(split[i]).capitalize()
+            split[i] = PARENT_CLASS(item).capitalize()
         return Color().join(split)
 
     def center(self, width, fillchar=None):
-        """Similar to str() method of the same name, returns Color() instance."""
+        """Similar to str() method of the same name, returns Color() instance.
+
+        :param int width: Length of output string.
+        :param str fillchar: Use this character instead of spaces.
+        """
         if fillchar is not None:
             result = PARENT_CLASS(self.value_no_colors).center(width, fillchar)
         else:
@@ -488,7 +595,11 @@ class Color(PARENT_CLASS):
         return PARENT_CLASS(self.value_no_colors).isupper()
 
     def ljust(self, width, fillchar=None):
-        """Similar to str() method of the same name, returns Color() instance."""
+        """Similar to str() method of the same name, returns Color() instance.
+
+        :param int width: Length of output string.
+        :param str fillchar: Use this character instead of spaces.
+        """
         if fillchar is not None:
             result = PARENT_CLASS(self.value_no_colors).ljust(width, fillchar)
         else:
@@ -504,16 +615,23 @@ class Color(PARENT_CLASS):
         return PARENT_CLASS(self.value_no_colors).rindex(*args, **kwargs)
 
     def rjust(self, width, fillchar=None):
-        """Similar to str() method of the same name, returns Color() instance."""
+        """Similar to str() method of the same name, returns Color() instance.
+
+        :param int width: Length of output string.
+        :param str fillchar: Use this character instead of spaces.
+        """
         if fillchar is not None:
             result = PARENT_CLASS(self.value_no_colors).rjust(width, fillchar)
         else:
             result = PARENT_CLASS(self.value_no_colors).rjust(width)
         return result.replace(self.value_no_colors, self.value_colors)
 
-    def splitlines(self):
-        """Similar to str() method of the same name, returns Color() instances in a list."""
-        return [Color(l) for l in PARENT_CLASS(self.value_colors).splitlines()]
+    def splitlines(self, **kwargs):
+        """Similar to str() method of the same name, returns Color() instances in a list.
+
+        :param dict kwargs: Pass keyword arguments to PARENT_CLASS.splitlines.
+        """
+        return [Color(l) for l in PARENT_CLASS(self.value_colors).splitlines(**kwargs)]
 
     def startswith(self, *args, **kwargs):
         """Similar to str() method of the same name."""
@@ -522,41 +640,47 @@ class Color(PARENT_CLASS):
     def swapcase(self):
         """Similar to str() method of the same name, returns Color() instance."""
         split = _RE_SPLIT.split(self.value_colors)
-        for i in range(len(split)):
-            if _RE_SPLIT.match(split[i]):
+        for i, item in enumerate(split):
+            if _RE_SPLIT.match(item):
                 continue
-            split[i] = PARENT_CLASS(split[i]).swapcase()
+            split[i] = PARENT_CLASS(item).swapcase()
         return Color().join(split)
 
     def title(self):
         """Similar to str() method of the same name, returns Color() instance."""
         split = _RE_SPLIT.split(self.value_colors)
-        for i in range(len(split)):
-            if _RE_SPLIT.match(split[i]):
+        for i, item in enumerate(split):
+            if _RE_SPLIT.match(item):
                 continue
-            split[i] = PARENT_CLASS(split[i]).title()
+            split[i] = PARENT_CLASS(item).title()
         return Color().join(split)
 
     def translate(self, table):
-        """Similar to str() method of the same name, returns Color() instance."""
+        """Similar to str() method of the same name, returns Color() instance.
+
+        :param table: Translation table.
+        """
         split = _RE_SPLIT.split(self.value_colors)
-        for i in range(len(split)):
-            if _RE_SPLIT.match(split[i]):
+        for i, item in enumerate(split):
+            if _RE_SPLIT.match(item):
                 continue
-            split[i] = PARENT_CLASS(split[i]).translate(table)
+            split[i] = PARENT_CLASS(item).translate(table)
         return Color().join(split)
 
     def upper(self):
         """Similar to str() method of the same name, returns Color() instance."""
         split = _RE_SPLIT.split(self.value_colors)
-        for i in range(len(split)):
-            if _RE_SPLIT.match(split[i]):
+        for i, item in enumerate(split):
+            if _RE_SPLIT.match(item):
                 continue
-            split[i] = PARENT_CLASS(split[i]).upper()
+            split[i] = PARENT_CLASS(item).upper()
         return Color().join(split)
 
     def zfill(self, width):
-        """Similar to str() method of the same name, returns Color() instance."""
+        """Similar to str() method of the same name, returns Color() instance.
+
+        :param int width: Length of output string.
+        """
         if not self.value_no_colors:
             return PARENT_CLASS().zfill(width)
 
@@ -613,11 +737,10 @@ class Windows(object):
     def enable(auto_colors=False, reset_atexit=False):
         """Enable color text with print() or sys.stdout.write() (stderr too).
 
-        Keyword arguments:
-        auto_colors -- automatically selects dark or light colors based on current terminal's background color. Only
-            works with {autored} and related tags.
-        reset_atexit -- resets original colors upon Python exit (in case you forget to reset it yourself with a closing
-            tag).
+        :param bool auto_colors: Automatically selects dark or light colors based on current terminal's background
+            color. Only works with {autored} and related tags.
+        :param bool reset_atexit: Resets original colors upon Python exit (in case you forget to reset it yourself with
+            a closing tag).
         """
         if os.name != 'nt':
             return False
@@ -730,21 +853,22 @@ class _WindowsCSBI(object):
     def get_info(handle):
         """Get information about this current console window (for Microsoft Windows only).
 
-        Raises IOError if attempt to get information fails (if there is no console window).
-
         Don't forget to call _WindowsCSBI.initialize() once in your application before calling this method.
 
-        Positional arguments:
-        handle -- either _WindowsCSBI.HANDLE_STDERR or _WindowsCSBI.HANDLE_STDOUT.
-
-        Returns:
-        Dictionary with different integer values. Keys are:
+        Returns dictionary with different integer values. Keys are:
             buffer_width -- width of the buffer (Screen Buffer Size in cmd.exe layout tab).
             buffer_height -- height of the buffer (Screen Buffer Size in cmd.exe layout tab).
             terminal_width -- width of the terminal window.
             terminal_height -- height of the terminal window.
             bg_color -- current background color (http://msdn.microsoft.com/en-us/library/windows/desktop/ms682088).
             fg_color -- current text color code.
+
+        :raise IOError: If attempt to get information fails (if there is no console window).
+
+        :param handle: Either _WindowsCSBI.HANDLE_STDERR or _WindowsCSBI.HANDLE_STDOUT.
+
+        :return: Terminal info.
+        :rtype: dict
         """
         # Query Win32 API.
         csbi = _WindowsCSBI.CSBI()
@@ -835,8 +959,7 @@ class _WindowsStreamStdOut(object):
         such as when {/red} is used, we must merge the default foreground color with the current background color. This
         is the reason for those negative values.
 
-        Positional arguments:
-        color_code -- integer color code from _WINDOWS_CODES.
+        :param int color_code: Color code from _WINDOWS_CODES.
         """
         # Get current color code.
         current_fg, current_bg = self._get_colors()
