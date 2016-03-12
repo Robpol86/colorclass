@@ -109,6 +109,12 @@ Changelog
 
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+Unreleased
+----------
+
+Added
+    * Python 3.5 support.
+
 1.2.0 - 2015-03-19
 ------------------
 
