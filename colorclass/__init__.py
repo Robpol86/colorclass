@@ -13,9 +13,11 @@ import ctypes
 import os
 import sys
 
-from colorclass.codes import ANSICodeMapping, BASE_CODES
+from colorclass.codes import BASE_CODES
 from colorclass.codes import list_tags  # noqa
 from colorclass.parse import parse_input, RE_NUMBER_SEARCH, RE_SPLIT
+from colorclass.toggles import disable_all_colors  # noqa
+from colorclass.toggles import set_dark_background, set_light_background
 
 __author__ = '@Robpol86'
 __license__ = 'MIT'
@@ -42,23 +44,6 @@ _WINDOWS_CODES = {
     '/hibgblue': -49, '/hibgmagenta': -49, '/hibgcyan': -49, '/hibgwhite': -49,
 }
 PARENT_CLASS = type(u'')
-
-
-def disable_all_colors():
-    """Disable all colors. Strips any color tags or codes."""
-    ANSICodeMapping.DISABLE_COLORS = True
-
-
-def set_light_background():
-    """Choose dark colors for all 'auto'-prefixed codes for readability on light backgrounds."""
-    ANSICodeMapping.DISABLE_COLORS = False
-    ANSICodeMapping.LIGHT_BACKGROUND = True
-
-
-def set_dark_background():
-    """Choose dark colors for all 'auto'-prefixed codes for readability on light backgrounds."""
-    ANSICodeMapping.DISABLE_COLORS = False
-    ANSICodeMapping.LIGHT_BACKGROUND = False
 
 
 class ColorBytes(bytes):
