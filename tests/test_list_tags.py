@@ -1,11 +1,11 @@
 """Test list_tags()."""
 
-from colorclass import _AutoCodes, list_tags
+from colorclass.codes import ANSICodeMapping, list_tags
 
 
 def test_main():
     """Test list_tags()."""
-    codes = _AutoCodes()
+    codes = ANSICodeMapping()
     tags = list_tags()
 
     for group in tags:
