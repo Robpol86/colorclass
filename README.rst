@@ -115,6 +115,9 @@ Unreleased
 Added
     * Python 3.5 support.
 
+Changed
+    * Converted library from Python module to a package.
+
 1.2.0 - 2015-03-19
 ------------------
 

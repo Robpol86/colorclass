@@ -56,7 +56,7 @@ setup(
     license='MIT',
     long_description=readme(),
     name='colorclass',
-    py_modules=['colorclass'],
+    packages=['colorclass'],
     url='https://github.com/Robpol86/colorclass',
     version='1.2.0',
     zip_safe=True,
