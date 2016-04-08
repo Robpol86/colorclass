@@ -11,11 +11,11 @@ https://pypi.python.org/pypi/colorclass
 import atexit
 import ctypes
 import os
-import re
 import sys
 
 from colorclass.codes import ANSICodeMapping, BASE_CODES
 from colorclass.codes import list_tags  # noqa
+from colorclass.parse import parse_input, RE_NUMBER_SEARCH, RE_SPLIT
 
 __author__ = '@Robpol86'
 __license__ = 'MIT'
@@ -41,60 +41,7 @@ _WINDOWS_CODES = {
     '/bgcyan': -49, '/bgwhite': -49, '/hibgblack': -49, '/hibgred': -49, '/hibggreen': -49, '/hibgyellow': -49,
     '/hibgblue': -49, '/hibgmagenta': -49, '/hibgcyan': -49, '/hibgwhite': -49,
 }
-_RE_GROUP_SEARCH = re.compile(r'(?:\033\[[\d;]+m)+')
-_RE_NUMBER_SEARCH = re.compile(r'\033\[([\d;]+)m')
-_RE_SPLIT = re.compile(r'(\033\[[\d;]+m)')
 PARENT_CLASS = type(u'')
-
-
-def _pad_input(incoming):
-    """Avoid IndexError and KeyError by ignoring un-related fields.
-
-    Example: '{0}{autored}' becomes '{{0}}{autored}'.
-
-    :param str incoming: The input unicode value.
-
-    :return: Padded unicode value.
-    :rtype: str
-    """
-    incoming_expanded = incoming.replace('{', '{{').replace('}', '}}')
-    for key in BASE_CODES:
-        before, after = '{{%s}}' % key, '{%s}' % key
-        if before in incoming_expanded:
-            incoming_expanded = incoming_expanded.replace(before, after)
-    return incoming_expanded
-
-
-def _parse_input(incoming):
-    """Perform the actual conversion of tags to ANSI escaped codes.
-
-    Provides a version of the input without any colors for len() and other methods.
-
-    :param str incoming: The input unicode value.
-
-    :return: 2-item tuple. First item is the parsed output. Second item is a version of the input without any colors.
-    :rtype: tuple
-    """
-    codes_ = dict((k, v) for k, v in ANSICodeMapping().items() if '{%s}' % k in incoming)
-    color_codes = dict((k, '' if ANSICodeMapping.DISABLE_COLORS else '\033[{0}m'.format(v)) for k, v in codes_.items())
-    incoming_padded = _pad_input(incoming)
-    output_colors = incoming_padded.format(**color_codes)
-
-    # Simplify: '{b}{red}' -> '\033[1m\033[31m' -> '\033[1;31m'
-    groups = sorted(set(_RE_GROUP_SEARCH.findall(output_colors)), key=len, reverse=True)  # Get codes, grouped adjacent.
-    groups_simplified = [[x for n in _RE_NUMBER_SEARCH.findall(i) for x in n.split(';')] for i in groups]
-    groups_compiled = ['\033[{0}m'.format(';'.join(g)) for g in groups_simplified]  # Final codes.
-    assert len(groups_compiled) == len(groups)  # For testing.
-    output_colors_simplified = output_colors
-    for i, group in enumerate(groups):
-        output_colors_simplified = output_colors_simplified.replace(group, groups_compiled[i])
-    output_no_colors = _RE_SPLIT.sub('', output_colors_simplified)
-
-    # Strip any remaining color codes.
-    if ANSICodeMapping.DISABLE_COLORS:
-        output_colors_simplified = _RE_NUMBER_SEARCH.sub('', output_colors_simplified)
-
-    return output_colors_simplified, output_no_colors
 
 
 def disable_all_colors():
@@ -292,13 +239,13 @@ class Color(PARENT_CLASS):
         """Constructor."""
         parent_class = cls.__bases__[0]
         value_markup = args[0] if args else parent_class()
-        value_colors, value_no_colors = _parse_input(value_markup)
+        value_colors, value_no_colors = parse_input(value_markup)
         if args:
             args = [value_colors] + list(args[1:])
 
         obj = parent_class.__new__(cls, *args, **kwargs)
         obj.value_colors, obj.value_no_colors = value_colors, value_no_colors
-        obj.has_colors = bool(_RE_NUMBER_SEARCH.match(value_colors))
+        obj.has_colors = bool(RE_NUMBER_SEARCH.match(value_colors))
         return obj
 
     def __len__(self):
@@ -307,9 +254,9 @@ class Color(PARENT_CLASS):
 
     def capitalize(self):
         """Similar to str() method of the same name, returns Color() instance."""
-        split = _RE_SPLIT.split(self.value_colors)
+        split = RE_SPLIT.split(self.value_colors)
         for i, item in enumerate(split):
-            if _RE_SPLIT.match(item):
+            if RE_SPLIT.match(item):
                 continue
             split[i] = PARENT_CLASS(item).capitalize()
         return Color().join(split)
@@ -431,18 +378,18 @@ class Color(PARENT_CLASS):
 
     def swapcase(self):
         """Similar to str() method of the same name, returns Color() instance."""
-        split = _RE_SPLIT.split(self.value_colors)
+        split = RE_SPLIT.split(self.value_colors)
         for i, item in enumerate(split):
-            if _RE_SPLIT.match(item):
+            if RE_SPLIT.match(item):
                 continue
             split[i] = PARENT_CLASS(item).swapcase()
         return Color().join(split)
 
     def title(self):
         """Similar to str() method of the same name, returns Color() instance."""
-        split = _RE_SPLIT.split(self.value_colors)
+        split = RE_SPLIT.split(self.value_colors)
         for i, item in enumerate(split):
-            if _RE_SPLIT.match(item):
+            if RE_SPLIT.match(item):
                 continue
             split[i] = PARENT_CLASS(item).title()
         return Color().join(split)
@@ -452,18 +399,18 @@ class Color(PARENT_CLASS):
 
         :param table: Translation table.
         """
-        split = _RE_SPLIT.split(self.value_colors)
+        split = RE_SPLIT.split(self.value_colors)
         for i, item in enumerate(split):
-            if _RE_SPLIT.match(item):
+            if RE_SPLIT.match(item):
                 continue
             split[i] = PARENT_CLASS(item).translate(table)
         return Color().join(split)
 
     def upper(self):
         """Similar to str() method of the same name, returns Color() instance."""
-        split = _RE_SPLIT.split(self.value_colors)
+        split = RE_SPLIT.split(self.value_colors)
         for i, item in enumerate(split):
-            if _RE_SPLIT.match(item):
+            if RE_SPLIT.match(item):
                 continue
             split[i] = PARENT_CLASS(item).upper()
         return Color().join(split)
@@ -476,7 +423,7 @@ class Color(PARENT_CLASS):
         if not self.value_no_colors:
             return PARENT_CLASS().zfill(width)
 
-        split = _RE_SPLIT.split(self.value_colors)
+        split = RE_SPLIT.split(self.value_colors)
         filled = PARENT_CLASS(self.value_no_colors).zfill(width)
         if len(split) == 1:
             return filled
@@ -773,16 +720,16 @@ class _WindowsStreamStdOut(object):
         _WindowsCSBI.WINDLL.kernel32.SetConsoleTextAttribute(self.WIN32_STREAM_HANDLE, final_color_code)
 
     def write(self, p_str):
-        for segment in _RE_SPLIT.split(p_str):
+        for segment in RE_SPLIT.split(p_str):
             if not segment:
                 # Empty string. p_str probably starts with colors so the first item is always ''.
                 continue
-            if not _RE_SPLIT.match(segment):
+            if not RE_SPLIT.match(segment):
                 # No color codes, print regular text.
                 self.ORIGINAL_STREAM.write(segment)
                 self.ORIGINAL_STREAM.flush()
                 continue
-            for color_code in (int(c) for c in _RE_NUMBER_SEARCH.findall(segment)[0].split(';')):
+            for color_code in (int(c) for c in RE_NUMBER_SEARCH.findall(segment)[0].split(';')):
                 if color_code in self.COMPILED_CODES:
                     self._set_color(self.COMPILED_CODES[color_code])
 
