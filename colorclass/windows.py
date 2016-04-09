@@ -3,12 +3,13 @@
 import atexit
 import ctypes
 import os
+import re
 import sys
 
-from colorclass.codes import BASE_CODES
-from colorclass.parse import RE_NUMBER_SEARCH, RE_SPLIT
-from colorclass.toggles import set_dark_background, set_light_background
+from colorclass.codes import ANSICodeMapping, BASE_CODES
+from colorclass.core import RE_SPLIT
 
+RE_NUMBER_SEARCH = re.compile(r'\033\[([\d;]+)m')
 WINDOWS_CODES = {
     '/all': -33, '/fg': -39, '/bg': -49,
 
@@ -274,10 +275,14 @@ class Windows(object):
         print(Color('{autored}Test{/autored}'))
     """
 
-    @staticmethod
-    def disable():
-        """Restore sys.stderr and sys.stdout to their original objects. Resets colors to their original values."""
-        if os.name != 'nt' or not Windows.is_enabled():
+    @classmethod
+    def disable(cls):
+        """Restore sys.stderr and sys.stdout to their original objects. Resets colors to their original values.
+
+        :return: If streams restored successfully.
+        :rtype: bool
+        """
+        if os.name != 'nt' or not cls.is_enabled():
             return False
 
         getattr(sys.stderr, '_reset_colors', lambda: False)()
@@ -295,14 +300,17 @@ class Windows(object):
         """Return True if either stderr or stdout has colors enabled."""
         return hasattr(sys.stderr, 'ORIGINAL_STREAM') or hasattr(sys.stdout, 'ORIGINAL_STREAM')
 
-    @staticmethod
-    def enable(auto_colors=False, reset_atexit=False):
+    @classmethod
+    def enable(cls, auto_colors=False, reset_atexit=False):
         """Enable color text with print() or sys.stdout.write() (stderr too).
 
         :param bool auto_colors: Automatically selects dark or light colors based on current terminal's background
             color. Only works with {autored} and related tags.
         :param bool reset_atexit: Resets original colors upon Python exit (in case you forget to reset it yourself with
             a closing tag).
+
+        :return: If streams replaced successfully.
+        :rtype: bool
         """
         if os.name != 'nt':
             return False
@@ -320,11 +328,14 @@ class Windows(object):
         # Automatically select which colors to display.
         bg_color = getattr(sys.stdout, 'default_bg', getattr(sys.stderr, 'default_bg', None))
         if auto_colors and bg_color is not None:
-            set_light_background() if bg_color in (112, 96, 240, 176, 224, 208, 160) else set_dark_background()
+            if bg_color in (112, 96, 240, 176, 224, 208, 160):
+                ANSICodeMapping.set_light_background()
+            else:
+                ANSICodeMapping.set_dark_background()
 
         # Reset on exit if requested.
         if reset_atexit:
-            atexit.register(Windows.disable)
+            atexit.register(cls.disable)
 
         return True
 
@@ -334,8 +345,8 @@ class Windows(object):
 
     def __enter__(self):
         """Context manager, enables colors on Windows."""
-        Windows.enable(auto_colors=self.auto_colors)
+        self.enable(auto_colors=self.auto_colors)
 
     def __exit__(self, *_):
         """Context manager, disabled colors on Windows."""
-        Windows.disable()
+        self.disable()

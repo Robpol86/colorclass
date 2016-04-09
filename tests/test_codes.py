@@ -27,14 +27,19 @@ def test_auto_toggles(toggle):
     """
     # Toggle.
     if toggle == 'light':
-        ANSICodeMapping.DISABLE_COLORS = False
-        ANSICodeMapping.LIGHT_BACKGROUND = True
+        ANSICodeMapping.enable_all_colors()
+        ANSICodeMapping.set_light_background()
+        assert ANSICodeMapping.DISABLE_COLORS is False
+        assert ANSICodeMapping.LIGHT_BACKGROUND is True
     elif toggle == 'dark':
-        ANSICodeMapping.DISABLE_COLORS = False
-        ANSICodeMapping.LIGHT_BACKGROUND = False
+        ANSICodeMapping.enable_all_colors()
+        ANSICodeMapping.set_dark_background()
+        assert ANSICodeMapping.DISABLE_COLORS is False
+        assert ANSICodeMapping.LIGHT_BACKGROUND is False
     else:
-        ANSICodeMapping.DISABLE_COLORS = True
-        ANSICodeMapping.LIGHT_BACKGROUND = False
+        ANSICodeMapping.disable_all_colors()
+        assert ANSICodeMapping.DISABLE_COLORS is True
+        assert ANSICodeMapping.LIGHT_BACKGROUND is False
 
     # Test iter and len.
     auto_codes = ANSICodeMapping('}{'.join([''] + list(BASE_CODES) + ['']))

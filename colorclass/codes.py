@@ -79,6 +79,26 @@ class ANSICodeMapping(Mapping):
         """Dictionary length."""
         return len(self.whitelist)
 
+    @classmethod
+    def disable_all_colors(cls):
+        """Disable all colors. Strips any color tags or codes."""
+        cls.DISABLE_COLORS = True
+
+    @classmethod
+    def enable_all_colors(cls):
+        """Enable all colors. Strips any color tags or codes."""
+        cls.DISABLE_COLORS = False
+
+    @classmethod
+    def set_dark_background(cls):
+        """Choose dark colors for all 'auto'-prefixed codes for readability on light backgrounds."""
+        cls.LIGHT_BACKGROUND = False
+
+    @classmethod
+    def set_light_background(cls):
+        """Choose dark colors for all 'auto'-prefixed codes for readability on light backgrounds."""
+        cls.LIGHT_BACKGROUND = True
+
     @property
     def autoblack(self):
         """Return automatic black foreground color depending on background color."""

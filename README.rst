@@ -114,9 +114,11 @@ Unreleased
 
 Added
     * Python 3.5 support.
+    * ``enable_all_colors()``, ``is_enabled()``, and ``is_light()`` toggle functions.
 
 Changed
     * Converted library from Python module to a package.
+    * ``set_light_background()`` and ``set_dark_background()`` no longer enable colors. Use ``enable_all_colors()``.
 
 1.2.0 - 2015-03-19
 ------------------

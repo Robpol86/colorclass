@@ -11,9 +11,26 @@ https://pypi.python.org/pypi/colorclass
 from colorclass.codes import list_tags  # noqa
 from colorclass.core import Color  # noqa
 from colorclass.toggles import disable_all_colors  # noqa
+from colorclass.toggles import enable_all_colors  # noqa
+from colorclass.toggles import is_enabled  # noqa
+from colorclass.toggles import is_light  # noqa
 from colorclass.toggles import set_dark_background  # noqa
 from colorclass.toggles import set_light_background  # noqa
 from colorclass.windows import Windows  # noqa
+
+
+__all__ = (
+    'Color',
+    'disable_all_colors',
+    'enable_all_colors',
+    'is_enabled',
+    'is_light',
+    'list_tags',
+    'set_dark_background',
+    'set_light_background',
+    'Windows',
+)
+
 
 __author__ = '@Robpol86'
 __license__ = 'MIT'
