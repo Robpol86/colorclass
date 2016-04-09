@@ -52,163 +52,140 @@ class ANSICodeMapping(Mapping):
 
     def __init__(self):
         """Constructor."""
-        self.__dict = BASE_CODES.copy()
+        pass
 
     def __getitem__(self, item):
-        """Return value for key.
+        """Return value for key or None if colors are disabled.
 
         :param str item: Key.
 
         :return: Color code integer.
+        :rtype: int
         """
-        if item == 'autoblack':
-            answer = self.autoblack
-        elif item == 'autored':
-            answer = self.autored
-        elif item == 'autogreen':
-            answer = self.autogreen
-        elif item == 'autoyellow':
-            answer = self.autoyellow
-        elif item == 'autoblue':
-            answer = self.autoblue
-        elif item == 'automagenta':
-            answer = self.automagenta
-        elif item == 'autocyan':
-            answer = self.autocyan
-        elif item == 'autowhite':
-            answer = self.autowhite
-        elif item == 'autobgblack':
-            answer = self.autobgblack
-        elif item == 'autobgred':
-            answer = self.autobgred
-        elif item == 'autobggreen':
-            answer = self.autobggreen
-        elif item == 'autobgyellow':
-            answer = self.autobgyellow
-        elif item == 'autobgblue':
-            answer = self.autobgblue
-        elif item == 'autobgmagenta':
-            answer = self.autobgmagenta
-        elif item == 'autobgcyan':
-            answer = self.autobgcyan
-        elif item == 'autobgwhite':
-            answer = self.autobgwhite
-        else:
-            answer = self.__dict[item]
-        return answer
+        if self.DISABLE_COLORS:
+            return None
+        return getattr(self, item, BASE_CODES[item])
 
     def __iter__(self):
         """Iterate dictionary."""
-        return iter(self.__dict)
+        return iter(BASE_CODES)
 
     def __len__(self):
         """Dictionary length."""
-        return len(self.__dict)
+        return len(BASE_CODES)
 
     @property
     def autoblack(self):
         """Return automatic black foreground color depending on background color."""
-        return self.__dict['black' if ANSICodeMapping.LIGHT_BACKGROUND else 'hiblack']
+        return BASE_CODES['black' if ANSICodeMapping.LIGHT_BACKGROUND else 'hiblack']
 
     @property
     def autored(self):
         """Return automatic red foreground color depending on background color."""
-        return self.__dict['red' if ANSICodeMapping.LIGHT_BACKGROUND else 'hired']
+        return BASE_CODES['red' if ANSICodeMapping.LIGHT_BACKGROUND else 'hired']
 
     @property
     def autogreen(self):
         """Return automatic green foreground color depending on background color."""
-        return self.__dict['green' if ANSICodeMapping.LIGHT_BACKGROUND else 'higreen']
+        return BASE_CODES['green' if ANSICodeMapping.LIGHT_BACKGROUND else 'higreen']
 
     @property
     def autoyellow(self):
         """Return automatic yellow foreground color depending on background color."""
-        return self.__dict['yellow' if ANSICodeMapping.LIGHT_BACKGROUND else 'hiyellow']
+        return BASE_CODES['yellow' if ANSICodeMapping.LIGHT_BACKGROUND else 'hiyellow']
 
     @property
     def autoblue(self):
         """Return automatic blue foreground color depending on background color."""
-        return self.__dict['blue' if ANSICodeMapping.LIGHT_BACKGROUND else 'hiblue']
+        return BASE_CODES['blue' if ANSICodeMapping.LIGHT_BACKGROUND else 'hiblue']
 
     @property
     def automagenta(self):
         """Return automatic magenta foreground color depending on background color."""
-        return self.__dict['magenta' if ANSICodeMapping.LIGHT_BACKGROUND else 'himagenta']
+        return BASE_CODES['magenta' if ANSICodeMapping.LIGHT_BACKGROUND else 'himagenta']
 
     @property
     def autocyan(self):
         """Return automatic cyan foreground color depending on background color."""
-        return self.__dict['cyan' if ANSICodeMapping.LIGHT_BACKGROUND else 'hicyan']
+        return BASE_CODES['cyan' if ANSICodeMapping.LIGHT_BACKGROUND else 'hicyan']
 
     @property
     def autowhite(self):
         """Return automatic white foreground color depending on background color."""
-        return self.__dict['white' if ANSICodeMapping.LIGHT_BACKGROUND else 'hiwhite']
+        return BASE_CODES['white' if ANSICodeMapping.LIGHT_BACKGROUND else 'hiwhite']
 
     @property
     def autobgblack(self):
         """Return automatic black background color depending on background color."""
-        return self.__dict['bgblack' if ANSICodeMapping.LIGHT_BACKGROUND else 'hibgblack']
+        return BASE_CODES['bgblack' if ANSICodeMapping.LIGHT_BACKGROUND else 'hibgblack']
 
     @property
     def autobgred(self):
         """Return automatic red background color depending on background color."""
-        return self.__dict['bgred' if ANSICodeMapping.LIGHT_BACKGROUND else 'hibgred']
+        return BASE_CODES['bgred' if ANSICodeMapping.LIGHT_BACKGROUND else 'hibgred']
 
     @property
     def autobggreen(self):
         """Return automatic green background color depending on background color."""
-        return self.__dict['bggreen' if ANSICodeMapping.LIGHT_BACKGROUND else 'hibggreen']
+        return BASE_CODES['bggreen' if ANSICodeMapping.LIGHT_BACKGROUND else 'hibggreen']
 
     @property
     def autobgyellow(self):
         """Return automatic yellow background color depending on background color."""
-        return self.__dict['bgyellow' if ANSICodeMapping.LIGHT_BACKGROUND else 'hibgyellow']
+        return BASE_CODES['bgyellow' if ANSICodeMapping.LIGHT_BACKGROUND else 'hibgyellow']
 
     @property
     def autobgblue(self):
         """Return automatic blue background color depending on background color."""
-        return self.__dict['bgblue' if ANSICodeMapping.LIGHT_BACKGROUND else 'hibgblue']
+        return BASE_CODES['bgblue' if ANSICodeMapping.LIGHT_BACKGROUND else 'hibgblue']
 
     @property
     def autobgmagenta(self):
         """Return automatic magenta background color depending on background color."""
-        return self.__dict['bgmagenta' if ANSICodeMapping.LIGHT_BACKGROUND else 'hibgmagenta']
+        return BASE_CODES['bgmagenta' if ANSICodeMapping.LIGHT_BACKGROUND else 'hibgmagenta']
 
     @property
     def autobgcyan(self):
         """Return automatic cyan background color depending on background color."""
-        return self.__dict['bgcyan' if ANSICodeMapping.LIGHT_BACKGROUND else 'hibgcyan']
+        return BASE_CODES['bgcyan' if ANSICodeMapping.LIGHT_BACKGROUND else 'hibgcyan']
 
     @property
     def autobgwhite(self):
         """Return automatic white background color depending on background color."""
-        return self.__dict['bgwhite' if ANSICodeMapping.LIGHT_BACKGROUND else 'hibgwhite']
+        return BASE_CODES['bgwhite' if ANSICodeMapping.LIGHT_BACKGROUND else 'hibgwhite']
 
 
 def list_tags():
     """List the available tags.
 
-    :return: Tuple of tuples. Child tuples are four items: opening tag, closing tag, main ansi value, closing ansi value
-    :rtype: tuple
+    :return: List of 4-item tuples: opening tag, closing tag, main ansi value, closing ansi value.
+    :rtype: list
     """
-    codes = ANSICodeMapping()
-    grouped = set([(k, '/{0}'.format(k), codes[k], codes['/{0}'.format(k)]) for k in codes if not k.startswith('/')])
+    # Build reverse dictionary. Keys are closing tags, values are [closing ansi, opening tag, opening ansi].
+    reverse_dict = dict()
+    for tag, ansi in sorted(BASE_CODES.items()):
+        if tag.startswith('/'):
+            reverse_dict[tag] = [ansi, None, None]
+        else:
+            reverse_dict['/' + tag][1:] = [tag, ansi]
 
-    # Add half-tags like /all.
-    found = [c for r in grouped for c in r[:2]]
-    missing = set([('', r[0], None, r[1]) if r[0].startswith('/') else (r[0], '', r[1], None)
-                   for r in ANSICodeMapping().items() if r[0] not in found])
-    grouped |= missing
+    # Collapse
+    four_item_tuples = [(v[1], k, v[2], v[0]) for k, v in reverse_dict.items()]
 
     # Sort.
-    payload = sorted([i for i in grouped if i[2] is None], key=lambda x: x[3])  # /all /fg /bg
-    grouped -= set(payload)
-    payload.extend(sorted([i for i in grouped if i[2] < 10], key=lambda x: x[2]))  # b i u flash
-    grouped -= set(payload)
-    payload.extend(sorted([i for i in grouped if i[0].startswith('auto')], key=lambda x: x[2]))  # auto colors
-    grouped -= set(payload)
-    payload.extend(sorted([i for i in grouped if not i[0].startswith('hi')], key=lambda x: x[2]))  # dark colors
-    grouped -= set(payload)
-    payload.extend(sorted(grouped, key=lambda x: x[2]))  # light colors
-    return tuple(payload)
+    def sorter(four_item):
+        """Sort /all /fg /bg first, then b i u flash, then auto colors, then dark colors, finally light colors.
+
+        :param iter four_item: [opening tag, closing tag, main ansi value, closing ansi value]
+
+        :return Sorting weight.
+        :rtype: int
+        """
+        if not four_item[2]:  # /all /fg /bg
+            return four_item[3] - 200
+        if four_item[2] < 10 or four_item[0].startswith('auto'):  # b f i u or auto colors
+            return four_item[2] - 100
+        return four_item[2]
+    four_item_tuples.sort(key=sorter)
+
+    return four_item_tuples

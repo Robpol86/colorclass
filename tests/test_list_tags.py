@@ -1,14 +1,10 @@
 """Test list_tags()."""
 
-from colorclass.codes import ANSICodeMapping, list_tags
+from colorclass.codes import BASE_CODES, list_tags
 
 
-def test_main():
+def test_list_tags():
     """Test list_tags()."""
-    codes = ANSICodeMapping()
-    tags = list_tags()
-
-    for group in tags:
-        if group[0]:
-            assert group[2] == codes[group[0]]
-        assert group[3] == codes[group[1]]
+    actual = list_tags()
+    assert ('red', '/red', 31, 39) in actual
+    assert sorted(t for i in actual for t in i[:2] if t is not None) == sorted(BASE_CODES)
