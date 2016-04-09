@@ -42,6 +42,28 @@ Install:
 
     pip install colorclass
 
+Piped Command Line
+==================
+
+It is possible to pipe curly-bracket tagged text to Python in the command line to produce color text. Some examples:
+
+.. code:: bash
+
+    echo "{red}Red{/red}" |python -m colorclass  # Red colored text.
+    echo -e "\033[31mRed\033[0m" | COLOR_DISABLE=true python -m colorclass  # Strip colors
+    echo -e "\033[31mRed\033[0m" | COLOR_ENABLE=true python -m colorclass &> file.txt  # Force colors.
+
+Export these environment variables as "true" to enable/disable some features:
+
+=============== ============================================
+Env Variable    Description
+=============== ============================================
+COLOR_ENABLE    Force colors even when piping to a file.
+COLOR_DISABLE   Strip all colors from incoming text.
+COLOR_LIGHT     Use light colored text for dark backgrounds.
+COLOR_DARK      Use dark colored text for light backgrounds.
+=============== ============================================
+
 Example Implementation
 ======================
 
