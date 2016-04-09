@@ -37,7 +37,7 @@ def parse_input(incoming):
     :return: 2-item tuple. First item is the parsed output. Second item is a version of the input without any colors.
     :rtype: tuple
     """
-    codes_ = dict((k, v) for k, v in ANSICodeMapping().items() if '{%s}' % k in incoming)
+    codes_ = dict((k, v) for k, v in ANSICodeMapping(incoming).items() if '{%s}' % k in incoming)
     color_codes = dict((k, '' if ANSICodeMapping.DISABLE_COLORS else '\033[{0}m'.format(v)) for k, v in codes_.items())
     incoming_padded = pad_input(incoming)
     output_colors = incoming_padded.format(**color_codes)

@@ -41,7 +41,7 @@ BASE_CODES = {
 
 
 class ANSICodeMapping(Mapping):
-    """Read-only subclass of dict, resolves closing tags (based on colorclass.CODES) and automatic colors.
+    """Read-only dictionary, resolves closing tags and automatic colors. Iterates only used color tags.
 
     :cvar bool DISABLE_COLORS: Disable colors (strip color codes).
     :cvar bool LIGHT_BACKGROUND: Use low intensity color codes.
@@ -50,9 +50,12 @@ class ANSICodeMapping(Mapping):
     DISABLE_COLORS = False
     LIGHT_BACKGROUND = False
 
-    def __init__(self):
-        """Constructor."""
-        pass
+    def __init__(self, value_markup):
+        """Constructor.
+
+        :param str value_markup: String with {color} tags.
+        """
+        self.whitelist = [k for k in BASE_CODES if '{' + k + '}' in value_markup]
 
     def __getitem__(self, item):
         """Return value for key or None if colors are disabled.
@@ -62,17 +65,19 @@ class ANSICodeMapping(Mapping):
         :return: Color code integer.
         :rtype: int
         """
+        if item not in self.whitelist:
+            raise KeyError(item)
         if self.DISABLE_COLORS:
             return None
         return getattr(self, item, BASE_CODES[item])
 
     def __iter__(self):
         """Iterate dictionary."""
-        return iter(BASE_CODES)
+        return iter(self.whitelist)
 
     def __len__(self):
         """Dictionary length."""
-        return len(BASE_CODES)
+        return len(self.whitelist)
 
     @property
     def autoblack(self):
