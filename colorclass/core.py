@@ -1,5 +1,6 @@
 """String subclass that handles ANSI color codes."""
 
+from colorclass.codes import ANSICodeMapping
 from colorclass.parse import parse_input, RE_NUMBER_SEARCH, RE_SPLIT
 
 PARENT_CLASS = type(u'')
@@ -183,7 +184,7 @@ class Color(PARENT_CLASS):
         """Constructor."""
         parent_class = cls.__bases__[0]
         value_markup = args[0] if args else parent_class()
-        value_colors, value_no_colors = parse_input(value_markup)
+        value_colors, value_no_colors = parse_input(value_markup, ANSICodeMapping.DISABLE_COLORS)
         if args:
             args = [value_colors] + list(args[1:])
 

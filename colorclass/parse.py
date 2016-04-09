@@ -2,58 +2,42 @@
 
 import re
 
-from colorclass.codes import ANSICodeMapping, BASE_CODES
+from colorclass.codes import ANSICodeMapping
 
-RE_GROUP_SEARCH = re.compile(r'(?:\033\[[\d;]+m)+')
+RE_ANSI = re.compile(r'(\033\[([\d;]+)m)')
+RE_COMBINE = re.compile(r'\033\[([\d;]+)m\033\[([\d;]+)m')
 RE_NUMBER_SEARCH = re.compile(r'\033\[([\d;]+)m')
 RE_SPLIT = re.compile(r'(\033\[[\d;]+m)')
 
 
-def pad_input(incoming):
-    """Avoid IndexError and KeyError by ignoring un-related fields.
-
-    Example: '{0}{autored}' becomes '{{0}}{autored}'.
-
-    :param str incoming: The input unicode value.
-
-    :return: Padded unicode value.
-    :rtype: str
-    """
-    incoming_expanded = incoming.replace('{', '{{').replace('}', '}}')
-    for key in BASE_CODES:
-        before, after = '{{%s}}' % key, '{%s}' % key
-        if before in incoming_expanded:
-            incoming_expanded = incoming_expanded.replace(before, after)
-    return incoming_expanded
-
-
-def parse_input(incoming):
+def parse_input(tagged_string, disable_colors):
     """Perform the actual conversion of tags to ANSI escaped codes.
 
     Provides a version of the input without any colors for len() and other methods.
 
-    :param str incoming: The input unicode value.
+    :param str tagged_string: The input unicode value.
+    :param bool disable_colors: Strip all colors in both outputs.
 
     :return: 2-item tuple. First item is the parsed output. Second item is a version of the input without any colors.
     :rtype: tuple
     """
-    codes_ = dict((k, v) for k, v in ANSICodeMapping(incoming).items() if '{%s}' % k in incoming)
-    color_codes = dict((k, '' if ANSICodeMapping.DISABLE_COLORS else '\033[{0}m'.format(v)) for k, v in codes_.items())
-    incoming_padded = pad_input(incoming)
-    output_colors = incoming_padded.format(**color_codes)
+    codes = ANSICodeMapping(tagged_string)
+    output_colors = getattr(tagged_string, 'value_colors', tagged_string)
 
-    # Simplify: '{b}{red}' -> '\033[1m\033[31m' -> '\033[1;31m'
-    groups = sorted(set(RE_GROUP_SEARCH.findall(output_colors)), key=len, reverse=True)  # Get codes, grouped adjacent.
-    groups_simplified = [[x for n in RE_NUMBER_SEARCH.findall(i) for x in n.split(';')] for i in groups]
-    groups_compiled = ['\033[{0}m'.format(';'.join(g)) for g in groups_simplified]  # Final codes.
-    assert len(groups_compiled) == len(groups)  # For testing.
-    output_colors_simplified = output_colors
-    for i, group in enumerate(groups):
-        output_colors_simplified = output_colors_simplified.replace(group, groups_compiled[i])
-    output_no_colors = RE_SPLIT.sub('', output_colors_simplified)
+    # Convert: '{b}{red}' -> '\033[1m\033[31m'
+    for tag, replacement in (('{' + k + '}', '' if v is None else '\033[%dm' % v) for k, v in codes.items()):
+        output_colors = output_colors.replace(tag, replacement)
 
-    # Strip any remaining color codes.
-    if ANSICodeMapping.DISABLE_COLORS:
-        output_colors_simplified = RE_NUMBER_SEARCH.sub('', output_colors_simplified)
+    # Strip colors.
+    output_no_colors = RE_ANSI.sub('', output_colors)
+    if disable_colors:
+        return output_no_colors, output_no_colors
 
-    return output_colors_simplified, output_no_colors
+    # Combine: '\033[1m\033[31m' -> '\033[1;31m'
+    while True:
+        simplified = RE_COMBINE.sub(r'\033[\1;\2m', output_colors)
+        if simplified == output_colors:
+            break
+        output_colors = simplified
+
+    return output_colors, output_no_colors
