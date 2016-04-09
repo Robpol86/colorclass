@@ -1,5 +1,6 @@
 """Handles mapping between color names and ANSI codes and determining auto color codes."""
 
+import sys
 from collections import Mapping
 
 BASE_CODES = {
@@ -47,7 +48,7 @@ class ANSICodeMapping(Mapping):
     :cvar bool LIGHT_BACKGROUND: Use low intensity color codes.
     """
 
-    DISABLE_COLORS = False
+    DISABLE_COLORS = not (sys.stdout.isatty() or sys.stderr.isatty())  # Disable colors when piped to another program.
     LIGHT_BACKGROUND = False
 
     def __init__(self, value_markup):

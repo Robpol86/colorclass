@@ -4,11 +4,13 @@
 Just prints sample text and exits.
 
 Usage:
-    example.py print [--light-bg|--no-colors]
+    example.py print [(--no-colors|--colors)] [(--light-bg|--dark-bg)]
     example.py -h | --help
 
 Options:
     -h --help       Show this screen.
+    --colors        Enable colors even when piped to another program.
+    --dark-bg       Autocolors adapt to black/dark backgrounds for Linux/OSX.
     --light-bg      Autocolors adapt to white/light backgrounds for Linux/OSX.
     --no-colors     Strip out any foreground or background colors.
 """
@@ -19,7 +21,10 @@ import os
 
 from docopt import docopt
 
-from colorclass import Color, disable_all_colors, set_light_background, Windows
+from colorclass import Color
+from colorclass import disable_all_colors, enable_all_colors, is_enabled
+from colorclass import set_dark_background, set_light_background
+from colorclass import Windows
 
 OPTIONS = docopt(__doc__) if __name__ == '__main__' else dict()
 
@@ -28,10 +33,15 @@ def main():
     """Main function called upon script execution."""
     if OPTIONS.get('--no-colors'):
         disable_all_colors()
-    elif os.name == 'nt':
+    elif OPTIONS.get('--colors'):
+        enable_all_colors()
+
+    if is_enabled() and os.name == 'nt':
         Windows.enable(auto_colors=True, reset_atexit=True)
     elif OPTIONS.get('--light-bg'):
         set_light_background()
+    elif OPTIONS.get('--dark-bg'):
+        set_dark_background()
 
     # Light or dark colors.
     print('Autocolors for all backgrounds:')
