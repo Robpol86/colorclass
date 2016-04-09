@@ -45,7 +45,8 @@ Install:
 Piped Command Line
 ==================
 
-It is possible to pipe curly-bracket tagged text to Python in the command line to produce color text. Some examples:
+It is possible to pipe curly-bracket tagged (or regular ANSI coded) text to Python in the command line to produce color
+text. Some examples:
 
 .. code:: bash
 
