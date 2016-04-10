@@ -1,5 +1,6 @@
 """Test objects in module."""
 
+import sys
 from functools import partial
 
 import pytest
@@ -73,27 +74,91 @@ def test_chaining(kind):
     instance = get_instance(kind, 'TEST')
     for color in ('green', 'blue', 'yellow'):
         instance = get_instance(kind, instance, color)
-    assert_both(instance, 'TEST', '\033[33;34;32;31mTEST\033[39;39;39;39m')
+    assert_both(instance, 'TEST', '\033[31mTEST\033[39m')
 
     # Test empty.
     instance = get_instance(kind)
     for color in ('red', 'green', 'blue', 'yellow'):
         instance = get_instance(kind, instance, color)
-    assert_both(instance, '', '\033[33;34;32;31;39;39;39;39m')
+    assert_both(instance, '', '\033[39m')
 
     # Test complicated.
     instance = 'TEST'
     for color in ('black', 'bgred', 'green', 'bgyellow', 'blue', 'bgmagenta', 'cyan', 'bgwhite'):
         instance = get_instance(kind, instance, color=color)
-    assert_both(instance, 'TEST', '\033[47;36;45;34;43;32;41;30mTEST\033[39;49;39;49;39;49;39;49m')
+    assert_both(instance, 'TEST', '\033[30;41mTEST\033[39;49m')
 
     # Test format and length.
     instance = get_instance(kind, '{0}').format(get_instance(kind, 'TEST'))
-    assert_both(instance, 'TEST', '\033[31;31mTEST\033[39;39m')
+    assert_both(instance, 'TEST', '\033[31mTEST\033[39m')
     assert len(instance) == 4
     instance = get_instance(kind, '{0}').format(instance)
-    assert_both(instance, 'TEST', '\033[31;31;31mTEST\033[39;39;39m')
+    assert_both(instance, 'TEST', '\033[31mTEST\033[39m')
     assert len(instance) == 4
     instance = get_instance(kind, '{0}').format(instance)
-    assert_both(instance, 'TEST', '\033[31;31;31;31mTEST\033[39;39;39;39m')
+    assert_both(instance, 'TEST', '\033[31mTEST\033[39m')
     assert len(instance) == 4
+
+
+@pytest.mark.parametrize('kind', ['str', 'Color plain', 'Color color'])
+def test_empty(kind):
+    """Test with empty string.
+
+    :param str kind: Type of string to test.
+    """
+    instance = get_instance(kind, u'')
+    assert_both = partial(assert_both_values, kind=kind)
+
+    assert len(instance) == 0
+
+    assert instance.encode('utf-8') == instance.encode('utf-8')
+    assert instance.encode('utf-8').decode('utf-8') == instance
+    assert_both(instance.encode('utf-8').decode('utf-8'), '', '\033[39m')
+    assert_both(instance.__class__.encode(instance, 'utf-8').decode('utf-8'), '', '\033[39m')
+    assert len(instance.encode('utf-8').decode('utf-8')) == 0
+    assert_both(instance.format(value=''), '', '\033[39m')
+
+    assert_both(instance.capitalize(), '', '\033[39m')
+    assert_both(instance.center(5), '     ', '\033[39m     ')
+    assert instance.count('') == 1
+    assert instance.count('t') == 0
+    assert instance.endswith('') is True
+    assert instance.endswith('me') is False
+    assert instance.find('') == 0
+    assert instance.find('t') == -1
+
+    assert instance.index('') == 0
+    with pytest.raises(ValueError):
+        assert instance.index('t')
+    assert instance.isalnum() is False
+    assert instance.isalpha() is False
+    if sys.version_info[0] != 2:
+        assert instance.isdecimal() is False
+    assert instance.isdigit() is False
+    if sys.version_info[0] != 2:
+        assert instance.isnumeric() is False
+    assert instance.isspace() is False
+    assert instance.istitle() is False
+    assert instance.isupper() is False
+
+    assert_both(instance.join(['A', 'B']), 'AB', 'A\033[39mB')
+    assert_both(instance.ljust(5), '     ', '\033[39m     ')
+    assert instance.rfind('') == 0
+    assert instance.rfind('t') == -1
+    assert instance.rindex('') == 0
+    with pytest.raises(ValueError):
+        assert instance.rindex('t')
+    assert_both(instance.rjust(5), '     ', '\033[39m     ')
+    if kind in ('str', 'Color plain'):
+        assert instance.splitlines() == list()
+    else:
+        assert instance.splitlines() == ['\033[39m']
+    assert instance.startswith('') is True
+    assert instance.startswith('T') is False
+    assert_both(instance.swapcase(), '', '\033[39m')
+
+    assert_both(instance.title(), '', '\033[39m')
+    assert_both(instance.translate({ord('t'): u'1', ord('e'): u'2', ord('s'): u'3'}), '', '\033[39m')
+    assert_both(instance.upper(), '', '\033[39m')
+    assert_both(instance.zfill(0), '', '')
+    assert_both(instance.zfill(1), '0', '0')

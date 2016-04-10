@@ -67,7 +67,7 @@ def test_format(kind, mode):
     if mode == 'fg within bg':
         expected[1] = '\033[41ma\033[32mB\033[39mc\033[32mB\033[39;49m'
     else:
-        expected[1] = '\033[31ma\033[42mB\033[49mc\033[42mB\033[49;39m'
+        expected[1] = '\033[31ma\033[42mB\033[49mc\033[42mB\033[39;49m'
 
     # Test.
     assert_both(template_pos.format(instance), expected[0], expected[1])
@@ -166,7 +166,7 @@ def test_j_s(kind):
 
     assert_both(instance.join(['A', 'B']), 'Atest meB', 'A\033[31mtest me\033[39mB')
     iterable = [get_instance(kind, 'A', 'green'), get_instance(kind, 'B', 'green')]
-    assert_both(instance.join(iterable), 'Atest meB', '\033[32mA\033[39;31mtest me\033[39;32mB\033[39m')
+    assert_both(instance.join(iterable), 'Atest meB', '\033[32mA\033[31mtest me\033[32mB\033[39m')
 
     assert_both(instance.ljust(11), 'test me    ', '\033[31mtest me\033[39m    ')
     assert_both(instance.ljust(11, '.'), 'test me....', '\033[31mtest me\033[39m....')
@@ -244,13 +244,13 @@ def test_empty(kind):
 
     assert instance.encode('utf-8') == instance.encode('utf-8')
     assert instance.encode('utf-8').decode('utf-8') == instance
-    assert_both(instance.encode('utf-8').decode('utf-8'), '', '\033[31;39m')
-    assert_both(instance.__class__.encode(instance, 'utf-8').decode('utf-8'), '', '\033[31;39m')
+    assert_both(instance.encode('utf-8').decode('utf-8'), '', '\033[39m')
+    assert_both(instance.__class__.encode(instance, 'utf-8').decode('utf-8'), '', '\033[39m')
     assert len(instance.encode('utf-8').decode('utf-8')) == 0
-    assert_both(instance.format(value=''), '', '\033[31;39m')
+    assert_both(instance.format(value=''), '', '\033[39m')
 
-    assert_both(instance.capitalize(), '', '\033[31;39m')
-    # assert_both(instance.center(5), '     ', '\033[39m     ')
+    assert_both(instance.capitalize(), '', '\033[39m')
+    assert_both(instance.center(5), '     ', '\033[39m     ')
     assert instance.count('') == 1
     assert instance.count('t') == 0
     assert instance.endswith('') is True
@@ -272,24 +272,24 @@ def test_empty(kind):
     assert instance.istitle() is False
     assert instance.isupper() is False
 
-    assert_both(instance.join(['A', 'B']), 'AB', 'A\033[31;39mB')
-    # assert_both(instance.ljust(5), '     ', '\033[39m     ')
+    assert_both(instance.join(['A', 'B']), 'AB', 'A\033[39mB')
+    assert_both(instance.ljust(5), '     ', '\033[39m     ')
     assert instance.rfind('') == 0
     assert instance.rfind('t') == -1
     assert instance.rindex('') == 0
     with pytest.raises(ValueError):
         assert instance.rindex('t')
-    # assert_both(instance.rjust(5), '     ', '\033[39m     ')
+    assert_both(instance.rjust(5), '     ', '\033[39m     ')
     if kind in ('str', 'ColorStr plain'):
         assert instance.splitlines() == list()
     else:
-        assert instance.splitlines() == ['\033[31;39m']
+        assert instance.splitlines() == ['\033[39m']
     assert instance.startswith('') is True
     assert instance.startswith('T') is False
-    assert_both(instance.swapcase(), '', '\033[31;39m')
+    assert_both(instance.swapcase(), '', '\033[39m')
 
-    assert_both(instance.title(), '', '\033[31;39m')
-    assert_both(instance.translate({ord('t'): u'1', ord('e'): u'2', ord('s'): u'3'}), '', '\033[31;39m')
-    assert_both(instance.upper(), '', '\033[31;39m')
+    assert_both(instance.title(), '', '\033[39m')
+    assert_both(instance.translate({ord('t'): u'1', ord('e'): u'2', ord('s'): u'3'}), '', '\033[39m')
+    assert_both(instance.upper(), '', '\033[39m')
     assert_both(instance.zfill(0), '', '')
     assert_both(instance.zfill(1), '0', '0')
