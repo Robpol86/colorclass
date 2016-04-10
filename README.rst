@@ -145,6 +145,7 @@ Changed
     * ``set_light_background()`` and ``set_dark_background()`` no longer enable colors. Use ``enable_all_colors()``.
     * Colors are disabled by default when STDERR and STDOUT are not streams (piped to files/null). Similar to ``grep``.
     * Reduce size of ANSI escape sequences by removing codes that have no effect. e.g. ``\033[31;35m`` to ``\033[35m``.
+    * Color methods that return strings now return Color instances instead of str instances.
 
 1.2.0 - 2015-03-19
 ------------------

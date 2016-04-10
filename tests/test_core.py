@@ -5,7 +5,16 @@ from functools import partial
 
 import pytest
 
+from colorclass.core import apply_text
 from tests.conftest import assert_both_values, get_instance
+
+
+def test_apply_text():
+    """Test apply_text()."""
+    assert apply_text('', lambda _: 0 / 0) == ''
+    assert apply_text('TEST', lambda s: s.lower()) == 'test'
+    assert apply_text('!\033[31mRed\033[0m', lambda s: s.upper()) == '!\033[31mRED\033[0m'
+    assert apply_text('\033[1mA \033[31mB \033[32;41mC \033[0mD', lambda _: '') == '\033[1m\033[31m\033[32;41m\033[0m'
 
 
 @pytest.mark.parametrize('kind', ['str', 'ColorStr plain', 'ColorStr color'])
@@ -229,6 +238,9 @@ def test_t_z(kind):
     assert_both(number.zfill(3), '350', '\033[31m350\033[39m')
     assert_both(number.zfill(4), '0350', '\033[31m0350\033[39m')
     assert_both(number.zfill(10), '0000000350', '\033[31m0000000350\033[39m')
+    assert_both(get_instance(kind, '-350').zfill(5), '-0350', '\033[31m-0350\033[39m')
+    assert_both(get_instance(kind, '-10.3').zfill(5), '-10.3', '\033[31m-10.3\033[39m')
+    assert_both(get_instance(kind, '-10.3').zfill(6), '-010.3', '\033[31m-010.3\033[39m')
 
 
 @pytest.mark.parametrize('kind', ['str', 'ColorStr plain', 'ColorStr color'])

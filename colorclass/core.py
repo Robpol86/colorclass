@@ -6,12 +6,45 @@ from colorclass.parse import parse_input, RE_SPLIT
 PARENT_CLASS = type(u'')
 
 
-class ColorBytes(bytes):
-    """Str (bytes in Python3) subclass, .decode() overridden to return ColorStr instance."""
+def apply_text(incoming, func):
+    """Call `func` on text portions of incoming color string.
 
-    def decode(*args, **kwargs):
-        """Similar to str() method of the same name, returns ColorStr() instance."""
-        return ColorStr(super(ColorBytes, args[0]).decode(*args[1:], **kwargs))
+    :param iter incoming: Incoming string/ColorStr/string-like object to iterate.
+    :param func: Function to call with string portion as first and only parameter.
+
+    :return: Modified string, same class type as incoming string.
+    """
+    split = RE_SPLIT.split(incoming)
+    for i, item in enumerate(split):
+        if not item or RE_SPLIT.match(item):
+            continue
+        split[i] = func(item)
+    return incoming.__class__().join(split)
+
+
+class ColorBytes(bytes):
+    """Str (bytes in Python3) subclass, .decode() overridden to return unicode (str in Python3) subclass instance."""
+
+    def __new__(cls, *args, **kwargs):
+        """Save original class so decode() returns an instance of it."""
+        original_class = kwargs.pop('original_class')
+        combined_args = [cls] + list(args)
+        instance = bytes.__new__(*combined_args, **kwargs)
+        instance.original_class = original_class
+        return instance
+
+    def decode(self, encoding='utf-8', errors='strict'):
+        """Decode using the codec registered for encoding. Default encoding is 'utf-8'.
+
+        errors may be given to set a different error handling scheme. Default is 'strict' meaning that encoding errors
+        raise a UnicodeDecodeError. Other possible values are 'ignore' and 'replace' as well as any other name
+        registered with codecs.register_error that is able to handle UnicodeDecodeErrors.
+
+        :param str encoding: Codec.
+        :param str errors: Error handling scheme.
+        """
+        original_class = getattr(self, 'original_class')
+        return original_class(super(ColorBytes, self).decode(encoding, errors))
 
 
 class ColorStr(PARENT_CLASS):
@@ -19,202 +52,255 @@ class ColorStr(PARENT_CLASS):
 
     def __new__(cls, *args, **kwargs):
         """Parse color markup and instantiate."""
+        # Parse string.
         value_markup = args[0] if args else PARENT_CLASS()  # e.g. '{red}test{/red}'
         value_colors, value_no_colors = parse_input(value_markup, ANSICodeMapping.DISABLE_COLORS)
 
         # Instantiate.
         color_args = [cls, value_colors] + list(args[1:])
-        obj = PARENT_CLASS.__new__(*color_args, **kwargs)
+        instance = PARENT_CLASS.__new__(*color_args, **kwargs)
 
         # Add additional attributes and return.
-        obj.value_colors, obj.value_no_colors = value_colors, value_no_colors
-        obj.has_colors = value_colors != value_no_colors
-        return obj
+        instance.value_colors = value_colors
+        instance.value_no_colors = value_no_colors
+        instance.has_colors = value_colors != value_no_colors
+        return instance
 
     def __len__(self):
-        """Return length of string without color codes (what users expect)."""
+        """Length of string without color codes (what users expect)."""
         return self.value_no_colors.__len__()
 
     def capitalize(self):
-        """Similar to str() method of the same name, returns ColorStr() instance."""
-        split = RE_SPLIT.split(self.value_colors)
-        for i, item in enumerate(split):
-            if RE_SPLIT.match(item):
-                continue
-            split[i] = PARENT_CLASS(item).capitalize()
-        return ColorStr().join(split)
+        """Return a copy of the string with only its first character capitalized."""
+        return apply_text(self, lambda s: s.capitalize())
 
     def center(self, width, fillchar=None):
-        """Similar to str() method of the same name, returns ColorStr() instance.
+        """Return centered in a string of length width. Padding is done using the specified fill character or space.
 
         :param int width: Length of output string.
         :param str fillchar: Use this character instead of spaces.
         """
         if fillchar is not None:
-            result = PARENT_CLASS(self.value_no_colors).center(width, fillchar)
+            result = self.value_no_colors.center(width, fillchar)
         else:
-            result = PARENT_CLASS(self.value_no_colors).center(width)
-        return result.replace(self.value_no_colors, self.value_colors)
+            result = self.value_no_colors.center(width)
+        return self.__class__(result.replace(self.value_no_colors, self.value_colors))
 
-    def count(self, *args, **kwargs):
-        """Similar to str() method of the same name."""
-        return PARENT_CLASS(self.value_no_colors).count(*args, **kwargs)
+    def count(self, sub, start=0, end=-1):
+        """Return the number of non-overlapping occurrences of substring sub in string[start:end].
 
-    def endswith(self, *args, **kwargs):
-        """Similar to str() method of the same name."""
-        return PARENT_CLASS(self.value_no_colors).endswith(*args, **kwargs)
+        Optional arguments start and end are interpreted as in slice notation.
 
-    def encode(*args, **kwargs):
-        """Similar to str() method of the same name, returns ColorBytes() instance."""
-        return ColorBytes(super(ColorStr, args[0]).encode(*args[1:], **kwargs))
+        :param str sub: Substring to search.
+        :param int start: Beginning position.
+        :param int end: Stop comparison at this position.
+        """
+        return self.value_no_colors.count(sub, start, end)
 
-    def decode(*args, **kwargs):
-        """Similar to str() method of the same name, returns ColorStr() instance."""
-        return ColorStr(super(ColorStr, args[0]).decode(*args[1:], **kwargs))
+    def endswith(self, suffix, start=0, end=None):
+        """Return True if ends with the specified suffix, False otherwise.
 
-    def find(self, *args, **kwargs):
-        """Similar to str() method of the same name."""
-        return PARENT_CLASS(self.value_no_colors).find(*args, **kwargs)
+        With optional start, test beginning at that position. With optional end, stop comparing at that position.
+        suffix can also be a tuple of strings to try.
 
-    def format(*args, **kwargs):
-        """Similar to str() method of the same name, returns ColorStr() instance."""
-        return ColorStr(super(ColorStr, args[0]).format(*args[1:], **kwargs))
+        :param str suffix: Suffix to search.
+        :param int start: Beginning position.
+        :param int end: Stop comparison at this position.
+        """
+        args = [suffix, start] + ([] if end is None else [end])
+        return self.value_no_colors.endswith(*args)
 
-    def index(self, *args, **kwargs):
-        """Similar to str() method of the same name."""
-        return PARENT_CLASS(self.value_no_colors).index(*args, **kwargs)
+    def encode(self, encoding=None, errors='strict'):
+        """Encode using the codec registered for encoding. encoding defaults to the default encoding.
+
+        errors may be given to set a different error handling scheme. Default is 'strict' meaning that encoding errors
+        raise a UnicodeEncodeError. Other possible values are 'ignore', 'replace' and 'xmlcharrefreplace' as well as any
+        other name registered with codecs.register_error that is able to handle UnicodeEncodeErrors.
+
+        :param str encoding: Codec.
+        :param str errors: Error handling scheme.
+        """
+        return ColorBytes(super(ColorStr, self).encode(encoding, errors), original_class=self.__class__)
+
+    def decode(self, encoding=None, errors='strict'):
+        """Decode using the codec registered for encoding. encoding defaults to the default encoding.
+
+        errors may be given to set a different error handling scheme. Default is 'strict' meaning that encoding errors
+        raise a UnicodeDecodeError. Other possible values are 'ignore' and 'replace' as well as any other name
+        registered with codecs.register_error that is able to handle UnicodeDecodeErrors.
+
+        :param str encoding: Codec.
+        :param str errors: Error handling scheme.
+        """
+        return self.__class__(super(ColorStr, self).decode(encoding, errors))
+
+    def find(self, sub, start=None, end=None):
+        """Return the lowest index where substring sub is found, such that sub is contained within string[start:end].
+
+        Optional arguments start and end are interpreted as in slice notation.
+
+        :param str sub: Substring to search.
+        :param int start: Beginning position.
+        :param int end: Stop comparison at this position.
+        """
+        return self.value_no_colors.find(sub, start, end)
+
+    def format(self, *args, **kwargs):
+        """Return a formatted version, using substitutions from args and kwargs.
+
+        The substitutions are identified by braces ('{' and '}').
+        """
+        return self.__class__(super(ColorStr, self).format(*args, **kwargs))
+
+    def index(self, sub, start=None, end=None):
+        """Like S.find() but raise ValueError when the substring is not found.
+
+        :param str sub: Substring to search.
+        :param int start: Beginning position.
+        :param int end: Stop comparison at this position.
+        """
+        return self.value_no_colors.index(sub, start, end)
 
     def isalnum(self):
-        """Similar to str() method of the same name."""
-        return PARENT_CLASS(self.value_no_colors).isalnum()
+        """Return True if all characters in string are alphanumeric and there is at least one character in it."""
+        return self.value_no_colors.isalnum()
 
     def isalpha(self):
-        """Similar to str() method of the same name."""
-        return PARENT_CLASS(self.value_no_colors).isalpha()
+        """Return True if all characters in string are alphabetic and there is at least one character in it."""
+        return self.value_no_colors.isalpha()
 
     def isdecimal(self):
-        """Similar to str() method of the same name."""
-        return PARENT_CLASS(self.value_no_colors).isdecimal()
+        """Return True if there are only decimal characters in string, False otherwise."""
+        return self.value_no_colors.isdecimal()
 
     def isdigit(self):
-        """Similar to str() method of the same name."""
-        return PARENT_CLASS(self.value_no_colors).isdigit()
+        """Return True if all characters in string are digits and there is at least one character in it."""
+        return self.value_no_colors.isdigit()
 
     def isnumeric(self):
-        """Similar to str() method of the same name."""
-        return PARENT_CLASS(self.value_no_colors).isnumeric()
+        """Return True if there are only numeric characters in string, False otherwise."""
+        return self.value_no_colors.isnumeric()
 
     def isspace(self):
-        """Similar to str() method of the same name."""
-        return PARENT_CLASS(self.value_no_colors).isspace()
+        """Return True if all characters in string are whitespace and there is at least one character in it."""
+        return self.value_no_colors.isspace()
 
     def istitle(self):
-        """Similar to str() method of the same name."""
-        return PARENT_CLASS(self.value_no_colors).istitle()
+        """Return True if string is a titlecased string and there is at least one character in it.
+
+        That is uppercase characters may only follow uncased characters and lowercase characters only cased ones. Return
+        False otherwise.
+        """
+        return self.value_no_colors.istitle()
 
     def isupper(self):
-        """Similar to str() method of the same name."""
-        return PARENT_CLASS(self.value_no_colors).isupper()
+        """Return True if all cased characters are uppercase and there is at least one cased character in it."""
+        return self.value_no_colors.isupper()
+
+    def join(self, iterable):
+        """Return a string which is the concatenation of the strings in the iterable.
+
+        :param iterable: Join items in this iterable.
+        """
+        return self.__class__(super(ColorStr, self).join(iterable))
 
     def ljust(self, width, fillchar=None):
-        """Similar to str() method of the same name, returns ColorStr() instance.
+        """Return left-justified string of length width. Padding is done using the specified fill character or space.
 
         :param int width: Length of output string.
         :param str fillchar: Use this character instead of spaces.
         """
         if fillchar is not None:
-            result = PARENT_CLASS(self.value_no_colors).ljust(width, fillchar)
+            result = self.value_no_colors.ljust(width, fillchar)
         else:
-            result = PARENT_CLASS(self.value_no_colors).ljust(width)
-        return result.replace(self.value_no_colors, self.value_colors)
+            result = self.value_no_colors.ljust(width)
+        return self.__class__(result.replace(self.value_no_colors, self.value_colors))
 
-    def rfind(self, *args, **kwargs):
-        """Similar to str() method of the same name."""
-        return PARENT_CLASS(self.value_no_colors).rfind(*args, **kwargs)
+    def rfind(self, sub, start=None, end=None):
+        """Return the highest index where substring sub is found, such that sub is contained within string[start:end].
 
-    def rindex(self, *args, **kwargs):
-        """Similar to str() method of the same name."""
-        return PARENT_CLASS(self.value_no_colors).rindex(*args, **kwargs)
+        Optional arguments start and end are interpreted as in slice notation.
+
+        :param str sub: Substring to search.
+        :param int start: Beginning position.
+        :param int end: Stop comparison at this position.
+        """
+        return self.value_no_colors.rfind(sub, start, end)
+
+    def rindex(self, sub, start=None, end=None):
+        """Like .rfind() but raise ValueError when the substring is not found.
+
+        :param str sub: Substring to search.
+        :param int start: Beginning position.
+        :param int end: Stop comparison at this position.
+        """
+        return self.value_no_colors.rindex(sub, start, end)
 
     def rjust(self, width, fillchar=None):
-        """Similar to str() method of the same name, returns ColorStr() instance.
+        """Return right-justified string of length width. Padding is done using the specified fill character or space.
 
         :param int width: Length of output string.
         :param str fillchar: Use this character instead of spaces.
         """
         if fillchar is not None:
-            result = PARENT_CLASS(self.value_no_colors).rjust(width, fillchar)
+            result = self.value_no_colors.rjust(width, fillchar)
         else:
-            result = PARENT_CLASS(self.value_no_colors).rjust(width)
-        return result.replace(self.value_no_colors, self.value_colors)
+            result = self.value_no_colors.rjust(width)
+        return self.__class__(result.replace(self.value_no_colors, self.value_colors))
 
-    def splitlines(self, **kwargs):
-        """Similar to str() method of the same name, returns ColorStr() instances in a list.
+    def splitlines(self, keepends=False):
+        """Return a list of the lines in the string, breaking at line boundaries.
 
-        :param dict kwargs: Pass keyword arguments to PARENT_CLASS.splitlines.
+        Line breaks are not included in the resulting list unless keepends is given and True.
+
+        :param bool keepends: Include linebreaks.
         """
-        return [ColorStr(l) for l in PARENT_CLASS(self.value_colors).splitlines(**kwargs)]
+        return [self.__class__(l) for l in self.value_colors.splitlines(keepends)]
 
-    def startswith(self, *args, **kwargs):
-        """Similar to str() method of the same name."""
-        return PARENT_CLASS(self.value_no_colors).startswith(*args, **kwargs)
+    def startswith(self, prefix, start=0, end=-1):
+        """Return True if string starts with the specified prefix, False otherwise.
+
+        With optional start, test beginning at that position. With optional end, stop comparing at that position. prefix
+        can also be a tuple of strings to try.
+
+        :param str prefix: Prefix to search.
+        :param int start: Beginning position.
+        :param int end: Stop comparison at this position.
+        """
+        return self.value_no_colors.startswith(prefix, start, end)
 
     def swapcase(self):
-        """Similar to str() method of the same name, returns ColorStr() instance."""
-        split = RE_SPLIT.split(self.value_colors)
-        for i, item in enumerate(split):
-            if RE_SPLIT.match(item):
-                continue
-            split[i] = PARENT_CLASS(item).swapcase()
-        return ColorStr().join(split)
+        """Return a copy of the string with uppercase characters converted to lowercase and vice versa."""
+        return apply_text(self, lambda s: s.swapcase())
 
     def title(self):
-        """Similar to str() method of the same name, returns ColorStr() instance."""
-        split = RE_SPLIT.split(self.value_colors)
-        for i, item in enumerate(split):
-            if RE_SPLIT.match(item):
-                continue
-            split[i] = PARENT_CLASS(item).title()
-        return ColorStr().join(split)
+        """Return a titlecased version of the string.
+
+        That is words start with uppercase characters, all remaining cased characters have lowercase.
+        """
+        return apply_text(self, lambda s: s.title())
 
     def translate(self, table):
-        """Similar to str() method of the same name, returns ColorStr() instance.
+        """Return a copy of the string, where all characters have been mapped through the given translation table.
+
+        Table must be a mapping of Unicode ordinals to Unicode ordinals, strings, or None. Unmapped characters are left
+        untouched. Characters mapped to None are deleted.
 
         :param table: Translation table.
         """
-        split = RE_SPLIT.split(self.value_colors)
-        for i, item in enumerate(split):
-            if RE_SPLIT.match(item):
-                continue
-            split[i] = PARENT_CLASS(item).translate(table)
-        return ColorStr().join(split)
+        return apply_text(self, lambda s: s.translate(table))
 
     def upper(self):
-        """Similar to str() method of the same name, returns ColorStr() instance."""
-        split = RE_SPLIT.split(self.value_colors)
-        for i, item in enumerate(split):
-            if RE_SPLIT.match(item):
-                continue
-            split[i] = PARENT_CLASS(item).upper()
-        return ColorStr().join(split)
+        """Return a copy of the string converted to uppercase."""
+        return apply_text(self, lambda s: s.upper())
 
     def zfill(self, width):
-        """Similar to str() method of the same name, returns ColorStr() instance.
+        """Pad a numeric string with zeros on the left, to fill a field of the specified width.
+
+        The string is never truncated.
 
         :param int width: Length of output string.
         """
         if not self.value_no_colors:
-            return PARENT_CLASS().zfill(width)
-
-        split = RE_SPLIT.split(self.value_colors)
-        filled = PARENT_CLASS(self.value_no_colors).zfill(width)
-        if len(split) == 1:
-            return filled
-
-        padding = filled.replace(self.value_no_colors, '')
-        if not split[0]:
-            split[2] = padding + split[2]
-        else:
-            split[0] = padding + split[0]
-
-        return ColorStr().join(split)
+            return self.__class__(self.value_no_colors.zfill(width))
+        return self.__class__(self.value_colors.replace(self.value_no_colors, self.value_no_colors.zfill(width)))

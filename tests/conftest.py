@@ -15,15 +15,24 @@ def assert_both_values(actual, expected_plain, expected_color, kind=None):
     :param expected_color: Expected color value.
     :param str kind: Type of string to test.
     """
-    actual = Color(actual)
     if kind.endswith('plain'):
         assert actual.value_colors == expected_plain
         assert actual.value_no_colors == expected_plain
+        assert actual.has_colors is False
     elif kind.endswith('color'):
         assert actual.value_colors == expected_color
         assert actual.value_no_colors == expected_plain
+        if '\033' in actual.value_colors:
+            assert actual.has_colors is True
+        else:
+            assert actual.has_colors is False
     else:
         assert actual == expected_plain
+
+    if kind.startswith('ColorStr'):
+        assert actual.__class__ == ColorStr
+    elif kind.startswith('Color'):
+        assert actual.__class__ == Color
 
 
 def get_instance(kind, sample=None, color='red'):
