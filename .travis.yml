@@ -11,3 +11,15 @@ after_success:
   - appveyor-artifacts -mi download
   - coverage combine
   - coveralls
+
+# Deploy.
+deploy:
+  provider: pypi
+  user: Robpol86
+  password:
+    secure:
+      "JYR5ZVOHqZnr4uq8qtA9bM0+pBCfenTUApgSK2eMY3AoQ/Xi4UmcJvsGQkX70wq4twstRm\
+      twpb/oFkAuxLMKkK7AJOTt9lKzqjF62xm/yGilDIYMZGCWi30OcRuUSQsEaE1Bq0H1TxciV\
+      /ztcdwcXpTq2+oNQz9M7sbH7Czmdbw="
+  on:
+    tags: true
