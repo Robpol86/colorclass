@@ -26,6 +26,30 @@ class Color(ColorStr):
         return cls('{%s}%s{/%s}' % (tag, string, tag))
 
     @classmethod
+    def black(cls, string, auto=False):
+        """Color-code entire string.
+
+        :param str string: String to colorize.
+        :param bool auto: Enable auto-color (dark/light terminal).
+
+        :return: Class instance for colorized string.
+        :rtype: Color
+        """
+        return cls.colorize('black', string, auto=auto)
+
+    @classmethod
+    def bgblack(cls, string, auto=False):
+        """Color-code entire string.
+
+        :param str string: String to colorize.
+        :param bool auto: Enable auto-color (dark/light terminal).
+
+        :return: Class instance for colorized string.
+        :rtype: Color
+        """
+        return cls.colorize('bgblack', string, auto=auto)
+
+    @classmethod
     def red(cls, string, auto=False):
         """Color-code entire string.
 
@@ -168,3 +192,27 @@ class Color(ColorStr):
         :rtype: Color
         """
         return cls.colorize('bgcyan', string, auto=auto)
+
+    @classmethod
+    def white(cls, string, auto=False):
+        """Color-code entire string.
+
+        :param str string: String to colorize.
+        :param bool auto: Enable auto-color (dark/light terminal).
+
+        :return: Class instance for colorized string.
+        :rtype: Color
+        """
+        return cls.colorize('white', string, auto=auto)
+
+    @classmethod
+    def bgwhite(cls, string, auto=False):
+        """Color-code entire string.
+
+        :param str string: String to colorize.
+        :param bool auto: Enable auto-color (dark/light terminal).
+
+        :return: Class instance for colorized string.
+        :rtype: Color
+        """
+        return cls.colorize('bgwhite', string, auto=auto)
