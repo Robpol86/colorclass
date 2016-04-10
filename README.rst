@@ -149,6 +149,10 @@ Changed
     * Reduce size of ANSI escape sequences by removing codes that have no effect. e.g. ``\033[31;35m`` to ``\033[35m``.
     * Color methods that return strings now return Color instances instead of str instances.
 
+Fixed
+    * https://github.com/Robpol86/colorclass/issues/15
+    * https://github.com/Robpol86/colorclass/issues/17
+
 1.2.0 - 2015-03-19
 ------------------
 

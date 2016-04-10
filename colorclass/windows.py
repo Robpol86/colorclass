@@ -161,7 +161,7 @@ class WindowsStreamStdOut(object):
     ALL_BG_CODES -- list of background Windows codes. Used to determine if requested color is foreground or background.
     COMPILED_CODES -- 'translation' dictionary. Keys are ANSI codes (values of BASE_CODES), values are Windows codes.
     ORIGINAL_STREAM -- the original stream to write non-code text to.
-    WIN32_STREAM_HANDLE -- handle to the Windows stdout device. Used by other Windows functions.
+    WIN32_STREAM_HANDLE_NAME -- handle to the Windows stdout device. Used by other Windows functions.
 
     Instance variables:
     default_fg -- the foreground Windows color code at the time of instantiation.
@@ -171,7 +171,7 @@ class WindowsStreamStdOut(object):
     ALL_BG_CODES = [v for k, v in WINDOWS_CODES.items() if k.startswith('bg') or k.startswith('hibg')]
     COMPILED_CODES = dict((v, WINDOWS_CODES[k]) for k, v in BASE_CODES.items() if k in WINDOWS_CODES)
     ORIGINAL_STREAM = sys.stdout
-    WIN32_STREAM_HANDLE = WindowsCSBI.HANDLE_STDOUT
+    WIN32_STREAM_HANDLE_NAME = 'HANDLE_STDOUT'
 
     def __init__(self):
         """Constructor."""
@@ -192,7 +192,7 @@ class WindowsStreamStdOut(object):
     def _get_colors(self):
         """Return a tuple of two integers representing current colors: (foreground, background)."""
         try:
-            csbi = WindowsCSBI.get_info(self.WIN32_STREAM_HANDLE)
+            csbi = WindowsCSBI.get_info(getattr(WindowsCSBI, self.WIN32_STREAM_HANDLE_NAME))
             return csbi['fg_color'], csbi['bg_color']
         except IOError:
             return 7, 0
@@ -233,7 +233,8 @@ class WindowsStreamStdOut(object):
             final_color_code = color_code | (current_fg if new_is_bg else current_bg)
 
         # Set new code.
-        WindowsCSBI.WINDLL.kernel32.SetConsoleTextAttribute(self.WIN32_STREAM_HANDLE, final_color_code)
+        stream_handle_name = getattr(WindowsCSBI, self.WIN32_STREAM_HANDLE_NAME)
+        WindowsCSBI.WINDLL.kernel32.SetConsoleTextAttribute(stream_handle_name, final_color_code)
 
     def write(self, p_str):
         """Write to stream.
@@ -258,7 +259,7 @@ class WindowsStreamStdErr(WindowsStreamStdOut):
     """Replacement stream which overrides sys.stderr. Subclasses WindowsStreamStdOut."""
 
     ORIGINAL_STREAM = sys.stderr
-    WIN32_STREAM_HANDLE = WindowsCSBI.HANDLE_STDERR
+    WIN32_STREAM_HANDLE_NAME = 'HANDLE_STDERR'
 
 
 class Windows(object):
