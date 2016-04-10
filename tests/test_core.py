@@ -24,7 +24,63 @@ def test_dunder(kind):
     :param str kind: Type of string to test.
     """
     instance = get_instance(kind, 'test ME ')
+    assert_both = partial(assert_both_values, kind=kind)
+
     assert len(instance) == 8
+
+    if kind == 'str':
+        assert repr(instance) == "'test ME '"
+    elif kind == 'ColorStr plain':
+        assert repr(instance) == "ColorStr('test ME ')"
+    else:
+        assert repr(instance) == "ColorStr('\\x1b[31mtest ME \\x1b[39m')"
+
+    assert_both(instance.__class__('1%s2' % instance), '1test ME 2', '1\033[31mtest ME \033[39m2')
+    assert_both(get_instance(kind, '1%s2') % 'test ME ', '1test ME 2', '\033[31m1test ME 2\033[39m')
+    assert_both(get_instance(kind, '1%s2') % instance, '1test ME 2', '\033[31m1test ME \033[39m2')
+
+    assert_both(instance * 2, 'test ME test ME ', '\033[31mtest ME test ME \033[39m')
+    assert_both(instance + instance, 'test ME test ME ', '\033[31mtest ME test ME \033[39m')
+    assert_both(instance + 'more', 'test ME more', '\033[31mtest ME \033[39mmore')
+    assert_both(instance.__class__('more' + instance), 'moretest ME ', 'more\033[31mtest ME \033[39m')
+    instance *= 2
+    assert_both(instance, 'test ME test ME ', '\033[31mtest ME test ME \033[39m')
+    instance += 'more'
+    assert_both(instance, 'test ME test ME more', '\033[31mtest ME test ME \033[39mmore')
+
+    assert_both(instance[0], 't', '\033[31mt\033[39m')
+    assert_both(instance[4], ' ', '\033[31m \033[39m')
+    assert_both(instance[-1], 'e', '\033[39me')
+    # assert_both(instance[1:-1], 'est ME test ME mor', '\033[31mest ME test ME \033[39mmor')
+    # assert_both(instance[1:9:2], 'etM ', '\033[31metM \033[39m')
+    # assert_both(instance[-1::-1], 'erom EM tset EM tset', 'erom\033[31m EM tset EM tset\033[39m')
+
+    with pytest.raises(IndexError):
+        assert instance[20]
+
+    actual = [i for i in instance]
+    assert len(actual) == 20
+    assert actual == list(instance)
+    assert_both(actual[0], 't', '\033[31mt\033[39m')
+    assert_both(actual[1], 'e', '\033[31me\033[39m')
+    assert_both(actual[2], 's', '\033[31ms\033[39m')
+    assert_both(actual[3], 't', '\033[31mt\033[39m')
+    assert_both(actual[4], ' ', '\033[31m \033[39m')
+    assert_both(actual[5], 'M', '\033[31mM\033[39m')
+    assert_both(actual[6], 'E', '\033[31mE\033[39m')
+    assert_both(actual[7], ' ', '\033[31m \033[39m')
+    assert_both(actual[8], 't', '\033[31mt\033[39m')
+    assert_both(actual[9], 'e', '\033[31me\033[39m')
+    assert_both(actual[10], 's', '\033[31ms\033[39m')
+    assert_both(actual[11], 't', '\033[31mt\033[39m')
+    assert_both(actual[12], ' ', '\033[31m \033[39m')
+    assert_both(actual[13], 'M', '\033[31mM\033[39m')
+    assert_both(actual[14], 'E', '\033[31mE\033[39m')
+    assert_both(actual[15], ' ', '\033[31m \033[39m')
+    assert_both(actual[16], 'm', '\033[39mm')
+    assert_both(actual[17], 'o', '\033[39mo')
+    assert_both(actual[18], 'r', '\033[39mr')
+    assert_both(actual[19], 'e', '\033[39me')
 
 
 @pytest.mark.parametrize('kind', ['str', 'ColorStr plain', 'ColorStr color'])
@@ -253,6 +309,12 @@ def test_empty(kind):
     assert_both = partial(assert_both_values, kind=kind)
 
     assert len(instance) == 0
+    assert_both(instance * 2, '', '\033[39m')
+    assert_both(instance + instance, '', '\033[39m')
+    with pytest.raises(IndexError):
+        assert instance[0]
+    assert not [i for i in instance]
+    assert not list(instance)
 
     assert instance.encode('utf-8') == instance.encode('utf-8')
     assert instance.encode('utf-8').decode('utf-8') == instance

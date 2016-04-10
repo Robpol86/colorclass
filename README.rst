@@ -139,6 +139,8 @@ Added
     * Python 3.5 support.
     * ``enable_all_colors()``, ``is_enabled()``, and ``is_light()`` toggle functions.
     * Library can be used as a script (e.g. ``echo "{red}Red{/red}" |python -m colorclass``).
+    * Ability to add/multiply Color instances just like str.
+    * Ability to iterate a Color instance and have each character keep its color codes.
 
 Changed
     * Converted library from Python module to a package.

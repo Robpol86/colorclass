@@ -2,6 +2,7 @@
 
 from colorclass.codes import ANSICodeMapping
 from colorclass.parse import parse_input, RE_SPLIT
+from colorclass.search import build_color_index, find_char_color
 
 PARENT_CLASS = type(u'')
 
@@ -55,6 +56,7 @@ class ColorStr(PARENT_CLASS):
         # Parse string.
         value_markup = args[0] if args else PARENT_CLASS()  # e.g. '{red}test{/red}'
         value_colors, value_no_colors = parse_input(value_markup, ANSICodeMapping.DISABLE_COLORS)
+        color_index = build_color_index(value_colors)
 
         # Instantiate.
         color_args = [cls, value_colors] + list(args[1:])
@@ -64,11 +66,41 @@ class ColorStr(PARENT_CLASS):
         instance.value_colors = value_colors
         instance.value_no_colors = value_no_colors
         instance.has_colors = value_colors != value_no_colors
+        instance.color_index = color_index
         return instance
+
+    def __add__(self, other):
+        """Concatenate."""
+        return self.__class__(self.value_colors + other)
+
+    def __getitem__(self, item):
+        """Retrieve character."""
+        try:
+            color_pos = self.color_index[int(item)]
+        except TypeError:  # slice
+            return super(ColorStr, self).__getitem__(item)
+        return self.__class__(find_char_color(self.value_colors, color_pos))
+
+    def __iter__(self):
+        """Yield one color-coded character at a time."""
+        for color_pos in self.color_index:
+            yield self.__class__(find_char_color(self.value_colors, color_pos))
 
     def __len__(self):
         """Length of string without color codes (what users expect)."""
         return self.value_no_colors.__len__()
+
+    def __mod__(self, other):
+        """String substitution (like printf)."""
+        return self.__class__(self.value_colors % other)
+
+    def __mul__(self, other):
+        """Multiply string."""
+        return self.__class__(self.value_colors * other)
+
+    def __repr__(self):
+        """Representation of a class instance (like datetime.datetime.now())."""
+        return '{name}({value})'.format(name=self.__class__.__name__, value=repr(self.value_colors))
 
     def capitalize(self):
         """Return a copy of the string with only its first character capitalized."""

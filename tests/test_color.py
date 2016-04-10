@@ -110,6 +110,12 @@ def test_empty(kind):
     assert_both = partial(assert_both_values, kind=kind)
 
     assert len(instance) == 0
+    assert_both(instance * 2, '', '\033[39m')
+    assert_both(instance + instance, '', '\033[39m')
+    with pytest.raises(IndexError):
+        assert instance[0]
+    assert not [i for i in instance]
+    assert not list(instance)
 
     assert instance.encode('utf-8') == instance.encode('utf-8')
     assert instance.encode('utf-8').decode('utf-8') == instance
