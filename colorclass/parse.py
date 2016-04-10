@@ -6,7 +6,6 @@ from colorclass.codes import ANSICodeMapping
 
 RE_ANSI = re.compile(r'(\033\[([\d;]+)m)')
 RE_COMBINE = re.compile(r'\033\[([\d;]+)m\033\[([\d;]+)m')
-RE_NUMBER_SEARCH = re.compile(r'\033\[([\d;]+)m')
 RE_SPLIT = re.compile(r'(\033\[[\d;]+m)')
 
 

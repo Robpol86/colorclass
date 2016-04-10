@@ -1,7 +1,7 @@
 # coding=utf-8
 """Test convenience shortcut class methods."""
 
-from colorclass.core import Color
+from colorclass.color import Color
 
 
 def test_static_color_methods():

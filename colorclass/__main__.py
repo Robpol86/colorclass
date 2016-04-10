@@ -9,7 +9,7 @@ from __future__ import print_function
 import fileinput
 import os
 
-from colorclass.core import Color
+from colorclass.color import Color
 from colorclass.toggles import disable_all_colors
 from colorclass.toggles import enable_all_colors
 from colorclass.toggles import set_dark_background

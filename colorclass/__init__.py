@@ -9,7 +9,7 @@ https://pypi.python.org/pypi/colorclass
 """
 
 from colorclass.codes import list_tags  # noqa
-from colorclass.core import Color  # noqa
+from colorclass.color import Color  # noqa
 from colorclass.toggles import disable_all_colors  # noqa
 from colorclass.toggles import enable_all_colors  # noqa
 from colorclass.toggles import is_enabled  # noqa

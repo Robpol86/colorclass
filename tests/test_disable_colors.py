@@ -1,6 +1,6 @@
 """Test disable_all_colors()."""
 
-from colorclass.core import Color
+from colorclass.color import Color
 from colorclass.toggles import disable_all_colors, set_dark_background
 
 

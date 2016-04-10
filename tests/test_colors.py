@@ -6,7 +6,7 @@ import sys
 
 import pytest
 
-from colorclass.core import Color
+from colorclass.color import Color
 
 
 class _Default(dict):
