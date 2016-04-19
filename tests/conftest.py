@@ -2,6 +2,7 @@
 
 import sys
 
+import py
 import pytest
 
 from colorclass.codes import ANSICodeMapping
@@ -9,6 +10,7 @@ from colorclass.color import Color
 from colorclass.core import ColorStr, PARENT_CLASS
 
 IS_WINDOWS = sys.platform == 'win32'
+PROJECT_ROOT = py.path.local(__file__).dirpath().join('..')
 
 
 @pytest.fixture(autouse=True)

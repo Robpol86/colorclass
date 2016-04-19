@@ -1,7 +1,7 @@
 """Test objects in module."""
 
+import subprocess
 import sys
-from subprocess import PIPE, Popen, STDOUT
 
 import pytest
 
@@ -11,7 +11,7 @@ from tests.conftest import IS_WINDOWS
 def test_import_do_nothing():
     """Make sure importing __main__ doesn't print anything."""
     command = [sys.executable, '-c', "from colorclass.__main__ import TRUTHY; assert TRUTHY"]
-    proc = Popen(command, stderr=STDOUT, stdout=PIPE)
+    proc = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
     output = proc.communicate()
     assert proc.poll() == 0
     assert not output[0]
@@ -41,7 +41,7 @@ def test(monkeypatch, colors, light):
         monkeypatch.setenv('COLOR_DARK', 'true')
 
     # Run.
-    proc = Popen(command, stderr=STDOUT, stdout=PIPE, stdin=PIPE if stdin else None)
+    proc = subprocess.Popen(command, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
     output = proc.communicate(stdin)[0].decode()
     assert proc.poll() == 0
     assert 'Red' in output
