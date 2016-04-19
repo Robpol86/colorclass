@@ -4,15 +4,15 @@
 Just prints sample text and exits.
 
 Usage:
-    example.py print [(--no-colors|--colors)] [(--light-bg|--dark-bg)]
+    example.py print [(-n|-c)] [(-l|-d)]
     example.py -h | --help
 
 Options:
-    -h --help       Show this screen.
-    --colors        Enable colors even when piped to another program.
-    --dark-bg       Autocolors adapt to black/dark backgrounds for Linux/OSX.
-    --light-bg      Autocolors adapt to white/light backgrounds for Linux/OSX.
-    --no-colors     Strip out any foreground or background colors.
+    -h --help           Show this screen.
+    -c --colors         Enable colors even when piped to another program.
+    -d --dark-bg        Autocolors for black/dark backgrounds on Linux/OSX.
+    -l --light-bg       Autocolors for white/light backgrounds on Linux/OSX.
+    -n --no-colors      Strip out any foreground or background colors.
 """
 
 from __future__ import print_function

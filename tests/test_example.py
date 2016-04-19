@@ -1,4 +1,4 @@
-"""Test example scripts."""
+"""Test example script."""
 
 import os
 import sys
@@ -62,14 +62,3 @@ def test_piped(monkeypatch, python_m, colors, light):
     else:
         assert count_dark_fg == 1
         assert count_light_fg == 2
-
-
-def test_import_do_nothing():
-    """Make sure importing __main__ doesn't print anything."""
-    command = [sys.executable, '-c', "from colorclass.__main__ import TRUTHY; assert TRUTHY"]
-
-    proc_handle = Popen(command, stderr=STDOUT, stdout=PIPE)
-    output = proc_handle.communicate()[0].decode()
-    assert proc_handle.poll() == 0
-
-    assert not output
