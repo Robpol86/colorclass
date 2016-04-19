@@ -1,8 +1,15 @@
 """Test objects in module."""
 
+import errno
+import os
+import subprocess
+import sys
+import time
+
 import pytest
 
 from colorclass.codes import ANSICodeMapping, BASE_CODES, list_tags
+from tests.conftest import IS_WINDOWS
 
 
 def test_ansi_code_mapping_whitelist():
@@ -76,3 +83,55 @@ def test_list_tags():
     actual = list_tags()
     assert ('red', '/red', 31, 39) in actual
     assert sorted(t for i in actual for t in i[:2] if t is not None) == sorted(BASE_CODES)
+
+
+@pytest.mark.parametrize('tty', [False, True])
+def test_disable_colors_piped(tty):
+    """Verify colors enabled by default when piped to TTY and disabled when not.
+
+    :param bool tty: Pipe to TTY/terminal?
+    """
+    assert_statement = 'assert __import__("colorclass").codes.ANSICodeMapping.DISABLE_COLORS is {bool}'
+    command_colors_enabled = [sys.executable, '-c', assert_statement.format(bool='False')]
+    command_colors_disabled = [sys.executable, '-c', assert_statement.format(bool='True')]
+
+    # Run piped to this pytest process.
+    if not tty:  # Outputs piped to non-terminal/non-tty. Colors disabled by default.
+        proc = subprocess.Popen(command_colors_disabled, stderr=subprocess.STDOUT, stdout=subprocess.PIPE)
+        output = proc.communicate()
+        assert not output[0]
+        assert not output[1]
+        assert proc.poll() == 0
+        return
+
+    # Run through a new console window (Windows).
+    if IS_WINDOWS:
+        c_flags = subprocess.CREATE_NEW_CONSOLE
+        proc = subprocess.Popen(command_colors_enabled, close_fds=True, creationflags=c_flags)
+        proc.communicate()  # Pipes directed towards new console window. Not worth doing screenshot image processing.
+        assert proc.poll() == 0
+        return
+
+    # Run through pseudo tty (Linux/OSX).
+    master, slave = __import__('pty').openpty()
+    proc = subprocess.Popen(command_colors_enabled, stderr=subprocess.STDOUT, stdout=slave, close_fds=True)
+    os.close(slave)
+
+    # Read output.
+    output = ''
+    while True:
+        try:
+            data = os.read(master, 1024).decode()
+        except OSError as exc:
+            if exc.errno != errno.EIO:  # EIO means EOF on some systems.
+                raise
+            data = None
+        if data:
+            output += data
+        elif proc.poll() is None:
+            time.sleep(0.01)
+        else:
+            break
+    os.close(master)
+    assert not output
+    assert proc.poll() == 0

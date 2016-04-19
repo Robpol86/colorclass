@@ -1,30 +1,25 @@
 """Test example scripts."""
 
-import errno
 import os
 import sys
-import time
 from subprocess import PIPE, Popen, STDOUT
 
 import pytest
 
-try:
-    import pty
-except ImportError:
-    pty = None
+from tests.conftest import IS_WINDOWS
 
 
 @pytest.mark.parametrize('python_m', [True, False])
 @pytest.mark.parametrize('colors', [True, False, None])
 @pytest.mark.parametrize('light', [True, False, None])
-def test_piped(python_m, colors, light):
+def test_piped(monkeypatch, python_m, colors, light):
     """Test example.py or "python -m" with output piped to subprocess. Leads to colors disabled by default.
 
+    :param monkeypatch: pytest fixture.
     :param bool python_m: Pipe to python -m colorclass if True, otherwise run example.py.
     :param bool colors: Enable, disable, or don't touch colors using CLI args or env variables.
     :param bool light: Enable light, dark, or don't touch auto colors using CLI args or env variables.
     """
-    env = dict(os.environ, PYTHONIOENCODING='utf-8')
     if python_m:
         stdin = '{autored}Red{/autored} {red}Red{/red} {hired}Red{/hired}'.encode()
         command = [sys.executable, '-m', 'colorclass' if sys.version_info >= (2, 7) else 'colorclass.__main__']
@@ -34,21 +29,22 @@ def test_piped(python_m, colors, light):
         assert os.path.isfile(script)
         command = [sys.executable, script, 'print']
     if colors is True:
-        env.update({'COLOR_ENABLE': 'true'}) if python_m else command.append('--colors')
+        monkeypatch.setenv('COLOR_ENABLE', 'true') if python_m else command.append('--colors')
     elif colors is False:
-        env.update({'COLOR_DISABLE': 'true'}) if python_m else command.append('--no-colors')
+        monkeypatch.setenv('COLOR_DISABLE', 'true') if python_m else command.append('--no-colors')
     if light is True:
-        env.update({'COLOR_LIGHT': 'true'}) if python_m else command.append('--light-bg')
+        monkeypatch.setenv('COLOR_LIGHT', 'true') if python_m else command.append('--light-bg')
     elif light is False:
-        env.update({'COLOR_DARK': 'true'}) if python_m else command.append('--dark-bg')
+        monkeypatch.setenv('COLOR_DARK', 'true') if python_m else command.append('--dark-bg')
 
     # Run.
-    proc_handle = Popen(command, env=env, stderr=STDOUT, stdout=PIPE, stdin=PIPE if stdin else None)
-    output = proc_handle.communicate(stdin)[0].decode()
-    assert proc_handle.poll() == 0
+    proc = Popen(command, stderr=STDOUT, stdout=PIPE, stdin=PIPE if stdin else None)
+    output = proc.communicate(stdin)[0].decode()
+    assert proc.poll() == 0
+    assert 'Red' in output
 
     # Just check that it runs on Windows. output is always stripped of all colors on Windows.
-    if os.name == 'nt':
+    if IS_WINDOWS:
         return
 
     # Verify colors.
@@ -77,56 +73,3 @@ def test_import_do_nothing():
     assert proc_handle.poll() == 0
 
     assert not output
-
-
-@pytest.mark.skipif("os.name == 'nt'")
-@pytest.mark.parametrize('colors', [True, False, None])
-def test_pty(colors):
-    """Test example.py through a pseudo TTY, having it think it's writing to a stream. Colors enabled by default.
-
-    From http://stackoverflow.com/a/12471855/1198943.
-
-    :param bool colors: Use --colors, --no-colors, or don't specify either (None).
-    """
-    env = dict(PYTHONIOENCODING='utf-8')
-    if 'SystemRoot' in os.environ:
-        env['SystemRoot'] = os.environ['SystemRoot']
-    script = os.path.join(os.path.dirname(__file__), '..', 'example.py')
-    command = [sys.executable, script, 'print']
-    if colors is True:
-        command.append('--colors')
-    elif colors is False:
-        command.append('--no-colors')
-
-    # Run.
-    master, slave = pty.openpty()
-    proc_handle = Popen(command, env=env, stderr=STDOUT, stdout=slave, close_fds=True)
-    os.close(slave)
-
-    # Stream output.
-    output = ''
-    while True:
-        try:
-            data = os.read(master, 1024).decode()
-        except OSError as exc:
-            if exc.errno != errno.EIO:  # EIO means EOF on some systems.
-                raise
-            data = None
-        if data:
-            output += data
-        elif proc_handle.poll() is None:
-            time.sleep(0.01)
-        else:
-            break
-
-    # Cleanup.
-    os.close(master)
-
-    # Verify exited 0.
-    assert proc_handle.poll() == 0
-
-    # Verify colors.
-    if colors is False:
-        assert '\033[' not in output
-        return
-    assert '\033[' in output

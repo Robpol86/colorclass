@@ -1,10 +1,24 @@
 """Configure tests."""
 
+import sys
+
 import pytest
 
 from colorclass.codes import ANSICodeMapping
 from colorclass.color import Color
 from colorclass.core import ColorStr, PARENT_CLASS
+
+IS_WINDOWS = sys.platform == 'win32'
+
+
+@pytest.fixture(autouse=True)
+def set_defaults(monkeypatch):
+    """Set ANSICodeMapping defaults before each test.
+
+    :param monkeypatch: pytest fixture.
+    """
+    monkeypatch.setattr(ANSICodeMapping, 'DISABLE_COLORS', False)
+    monkeypatch.setattr(ANSICodeMapping, 'LIGHT_BACKGROUND', False)
 
 
 def assert_both_values(actual, expected_plain, expected_color, kind=None):
@@ -63,13 +77,3 @@ def get_instance(kind, sample=None, color='red'):
         tags = '{%s}' % color, '{/%s}' % color
         return cls(tags[0] + sample + tags[1])
     return sample
-
-
-@pytest.fixture(autouse=True)
-def set_defaults(monkeypatch):
-    """Set ANSICodeMapping defaults before each test.
-
-    :param monkeypatch: pytest fixture.
-    """
-    monkeypatch.setattr(ANSICodeMapping, 'DISABLE_COLORS', False)
-    monkeypatch.setattr(ANSICodeMapping, 'LIGHT_BACKGROUND', False)

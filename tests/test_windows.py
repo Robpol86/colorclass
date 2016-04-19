@@ -2,15 +2,15 @@
 
 from __future__ import print_function
 
-import os
 import sys
 
 import pytest
 
 from colorclass.color import Color
 from colorclass.windows import Windows
+from tests.conftest import IS_WINDOWS
 
-pytestmark = pytest.mark.skipif(os.name != 'nt', reason='Requires windows.')
+pytestmark = pytest.mark.skipif(not IS_WINDOWS, reason='Requires windows.')
 
 
 def test_disable_safe():
