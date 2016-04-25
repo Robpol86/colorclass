@@ -7,10 +7,7 @@ import pytest
 
 from colorclass.windows import IS_WINDOWS
 from tests.conftest import PROJECT_ROOT
-from tests.screenshot import screenshot_until_match
-
-STARTF_USESHOWWINDOW = getattr(subprocess, 'STARTF_USESHOWWINDOW', 1)
-SW_MAXIMIZE = 3
+from tests.screenshot import run_new_console, screenshot_until_match
 
 
 @pytest.mark.parametrize('colors', [True, False, None])
@@ -76,14 +73,7 @@ def test_windows_screenshot(colors):
     elif colors is False:
         command.append('--no-colors')
 
-    # Run.
-    c_flags = subprocess.CREATE_NEW_CONSOLE
-    startup_info = subprocess.STARTUPINFO()
-    startup_info.dwFlags = STARTF_USESHOWWINDOW
-    startup_info.wShowWindow = SW_MAXIMIZE  # Start CMD window maximized.
-    proc = subprocess.Popen(command, close_fds=True, creationflags=c_flags, startupinfo=startup_info)
-
-    # Verify.
+    # Setup expected.
     if colors is False:
         candidates = PROJECT_ROOT.join('tests').listdir('sub_sans_*.bmp')
         expected_count = 27
@@ -91,6 +81,7 @@ def test_windows_screenshot(colors):
         candidates = PROJECT_ROOT.join('tests').listdir('sub_light_fg_*.bmp')
         expected_count = 2
     assert candidates
-    assert screenshot_until_match(str(screenshot), 5, [str(p) for p in candidates], expected_count)
-    proc.communicate()
-    assert proc.poll() == 0
+
+    # Run.
+    with run_new_console(command) as box:
+        assert screenshot_until_match(str(screenshot), 5, [str(p) for p in candidates], expected_count, box)

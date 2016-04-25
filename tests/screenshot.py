@@ -1,11 +1,132 @@
 """Take screenshots and search for subimages in images."""
 
+import contextlib
+import ctypes
+import os
+import random
+import struct
+import subprocess
 import time
 
 try:
     from itertools import izip
 except ImportError:
     izip = zip  # Py3
+
+from tests.conftest import PROJECT_ROOT
+
+STARTF_USESHOWWINDOW = getattr(subprocess, 'STARTF_USESHOWWINDOW', 1)
+STILL_ACTIVE = 259
+SW_MAXIMIZE = 3
+
+
+class StartupInfo(ctypes.Structure):
+    """STARTUPINFO structure."""
+
+    _fields_ = [
+        ('cb', ctypes.c_ulong),
+        ('lpReserved', ctypes.c_char_p),
+        ('lpDesktop', ctypes.c_char_p),
+        ('lpTitle', ctypes.c_char_p),
+        ('dwX', ctypes.c_ulong),
+        ('dwY', ctypes.c_ulong),
+        ('dwXSize', ctypes.c_ulong),
+        ('dwYSize', ctypes.c_ulong),
+        ('dwXCountChars', ctypes.c_ulong),
+        ('dwYCountChars', ctypes.c_ulong),
+        ('dwFillAttribute', ctypes.c_ulong),
+        ('dwFlags', ctypes.c_ulong),
+        ('wShowWindow', ctypes.c_ushort),
+        ('cbReserved2', ctypes.c_ushort),
+        ('lpReserved2', ctypes.c_char_p),
+        ('hStdInput', ctypes.c_ulong),
+        ('hStdOutput', ctypes.c_ulong),
+        ('hStdError', ctypes.c_ulong),
+    ]
+
+    def __init__(self, new_max_window=False, title=None):
+        """Constructor.
+
+        :param bool new_max_window: Start process in new console window, maximized.
+        :param bytes title: Set new window title to this instead of exe path.
+        """
+        super(StartupInfo, self).__init__()
+        self.cb = ctypes.sizeof(self)
+        if new_max_window:
+            self.dwFlags |= STARTF_USESHOWWINDOW
+            self.wShowWindow = SW_MAXIMIZE
+        if title:
+            self.lpTitle = ctypes.c_char_p(title)
+
+
+class ProcessInfo(ctypes.Structure):
+    """PROCESS_INFORMATION structure."""
+
+    _fields_ = [
+        ('hProcess', ctypes.c_void_p),
+        ('hThread', ctypes.c_void_p),
+        ('dwProcessId', ctypes.c_ulong),
+        ('dwThreadId', ctypes.c_ulong),
+    ]
+
+
+@contextlib.contextmanager
+def run_new_console(command):
+    """Run the command in a new console window. Windows only. Use in a with statement.
+
+    subprocess sucks and really limits your access to the win32 API. Its implementation is half-assed. Using this so
+    that STARTUPINFO.lpTitle actually works.
+
+    :param iter command: Command to run.
+
+    :return: Yields region the new window is in (left, upper, right, lower).
+    :rtype: tuple
+    """
+    title = 'pytest-{0}-{1}'.format(os.getpid(), random.randint(1000, 9999)).encode('ascii')  # For FindWindow.
+    startup_info = StartupInfo(new_max_window=True, title=title)
+    process_info = ProcessInfo()
+    command_str = subprocess.list2cmdline(command).encode('ascii')
+
+    # Run.
+    res = ctypes.windll.kernel32.CreateProcessA(
+        None,  # lpApplicationName
+        command_str,  # lpCommandLine
+        None,  # lpProcessAttributes
+        None,  # lpThreadAttributes
+        False,  # bInheritHandles
+        subprocess.CREATE_NEW_CONSOLE,  # dwCreationFlags
+        None,  # lpEnvironment
+        str(PROJECT_ROOT).encode('ascii'),  # lpCurrentDirectory
+        ctypes.byref(startup_info),  # lpStartupInfo
+        ctypes.byref(process_info)  # lpProcessInformation
+    )
+    assert res
+
+    # Get hWnd.
+    hwnd = 0
+    for _ in range(int(5 / 0.1)):
+        hwnd = ctypes.windll.user32.FindWindowA(None, title)  # Takes time for console window to initialize.
+        if hwnd:
+            break
+        time.sleep(0.1)
+    assert hwnd
+
+    # Get new console window's position and dimensions.
+    string_buffer = ctypes.create_string_buffer(16)  # To be written to by GetWindowRect.
+    ctypes.windll.user32.GetWindowRect(hwnd, string_buffer)
+    left, top, right, bottom = struct.unpack('llll', string_buffer.raw)
+    width, height = right - left, bottom - top
+    assert width > 1
+    assert height > 1
+    yield left, top, right, bottom
+
+    # Verify process exited 0.
+    status = ctypes.c_ulong(STILL_ACTIVE)
+    while status.value == STILL_ACTIVE:
+        time.sleep(0.1)
+        res = ctypes.windll.kernel32.GetExitCodeProcess(process_info.hProcess, ctypes.byref(status))
+        assert res
+    assert status.value == 0
 
 
 def iter_rows(pil_image):
@@ -79,7 +200,7 @@ def count_subimages(screenshot, subimg):
     return occurrences
 
 
-def screenshot_until_match(save_to, timeout, subimg_candidates, expected_count):
+def screenshot_until_match(save_to, timeout, subimg_candidates, expected_count, box=None):
     """Take screenshots until one of the 'done' subimages is found. Image is saved when subimage found or at timeout.
 
     If you get ImportError run "pip install pillow". Only OSX and Windows is supported.
@@ -88,6 +209,7 @@ def screenshot_until_match(save_to, timeout, subimg_candidates, expected_count):
     :param int timeout: Give up after these many seconds.
     :param iter subimg_candidates: Subimage paths to look for. List of strings.
     :param int expected_count: Keep trying until any of subimg_candidates is found this many times.
+    :param tuple box: Crop screen shot to this region (left, upper, right, lower).
 
     :return: If one of the 'done' subimages was found somewhere in the screenshot.
     :rtype: bool
@@ -98,7 +220,7 @@ def screenshot_until_match(save_to, timeout, subimg_candidates, expected_count):
 
     # Take screenshots until subimage is found.
     while True:
-        with ImageGrab.grab() as rgba:
+        with ImageGrab.grab(box) as rgba:
             with rgba.convert(mode='RGB') as screenshot:
                 for subimg_path in subimg_candidates:
                     with Image.open(subimg_path) as rgba_s:
