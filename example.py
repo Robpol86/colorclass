@@ -4,7 +4,7 @@
 Just prints sample text and exits.
 
 Usage:
-    example.py print [(-n|-c)] [(-l|-d)]
+    example.py print [(-n|-c)] [(-l|-d)] [-w FILE]
     example.py -h | --help
 
 Options:
@@ -13,11 +13,14 @@ Options:
     -d --dark-bg        Autocolors for black/dark backgrounds on Linux/OSX.
     -l --light-bg       Autocolors for white/light backgrounds on Linux/OSX.
     -n --no-colors      Strip out any foreground or background colors.
+    -w FILE --wait=FILE Wait for user create FILE, then exit. For testing.
 """
 
 from __future__ import print_function
 
 import os
+import sys
+import time
 
 from docopt import docopt
 
@@ -211,6 +214,15 @@ def main():
     print(Color('{bgwhite}{green}Green{/green}{/bgwhite} {bgwhite}{yellow}Yellow{/yellow}{/bgwhite} '), end='')
     print(Color('{bgwhite}{blue}Blue{/blue}{/bgwhite} {bgwhite}{magenta}Magenta{/magenta}{/bgwhite} '), end='')
     print(Color('{bgwhite}{cyan}Cyan{/cyan}{/bgwhite} {bgwhite}{white}White{/white}{/bgwhite}'))
+
+    if OPTIONS['--wait']:
+        print('Waiting for {0} to exist within 10 seconds...'.format(OPTIONS['--wait']), file=sys.stderr, end='')
+        stop_after = time.time() + 10
+        while not os.path.exists(OPTIONS['--wait']) and time.time() < stop_after:
+            print('.', file=sys.stderr, end='')
+            sys.stderr.flush()
+            time.sleep(0.5)
+        print(' done')
 
 
 if __name__ == '__main__':
