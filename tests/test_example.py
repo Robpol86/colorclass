@@ -56,11 +56,17 @@ def test_piped(colors, light_bg):
 
 
 @pytest.mark.skipif(str(not IS_WINDOWS))
-@pytest.mark.parametrize('colors', [True, False, None])
-def test_windows_screenshot(colors):
+@pytest.mark.parametrize('colors,light_bg', [
+    (True, False),
+    (True, True),
+    (False, False),
+    (None, False),
+])
+def test_windows_screenshot(colors, light_bg):
     """Test script on Windows in a new console window. Take a screenshot to verify colors work.
 
     :param bool colors: Enable, disable, or omit color arguments (default has colors).
+    :param bool light_bg: Create console with white background color.
     """
     screenshot = PROJECT_ROOT.join('image.png')
     if screenshot.check():
@@ -77,11 +83,14 @@ def test_windows_screenshot(colors):
     if colors is False:
         candidates = PROJECT_ROOT.join('tests').listdir('sub_sans_*.bmp')
         expected_count = 27
+    elif light_bg:
+        candidates = PROJECT_ROOT.join('tests').listdir('sub_dark_fg_*.bmp')
+        expected_count = 2
     else:
         candidates = PROJECT_ROOT.join('tests').listdir('sub_light_fg_*.bmp')
         expected_count = 2
     assert candidates
 
     # Run.
-    with run_new_console(command) as box:
-        assert screenshot_until_match(str(screenshot), 5, [str(p) for p in candidates], expected_count, box)
+    with run_new_console(command, white_bg=light_bg) as box:
+        assert screenshot_until_match(str(screenshot), 10, [str(p) for p in candidates], expected_count, box)

@@ -13,8 +13,10 @@ try:
 except ImportError:
     izip = zip  # Py3
 
+from colorclass.windows import WINDOWS_CODES
 from tests.conftest import PROJECT_ROOT
 
+STARTF_USEFILLATTRIBUTE = 0x00000010
 STARTF_USESHOWWINDOW = getattr(subprocess, 'STARTF_USESHOWWINDOW', 1)
 STILL_ACTIVE = 259
 SW_MAXIMIZE = 3
@@ -44,10 +46,11 @@ class StartupInfo(ctypes.Structure):
         ('hStdError', ctypes.c_ulong),
     ]
 
-    def __init__(self, new_max_window=False, title=None):
+    def __init__(self, new_max_window=False, title=None, white_bg=False):
         """Constructor.
 
         :param bool new_max_window: Start process in new console window, maximized.
+        :param bool white_bg: New console window will be black text on white background.
         :param bytes title: Set new window title to this instead of exe path.
         """
         super(StartupInfo, self).__init__()
@@ -57,6 +60,9 @@ class StartupInfo(ctypes.Structure):
             self.wShowWindow = SW_MAXIMIZE
         if title:
             self.lpTitle = ctypes.c_char_p(title)
+        if white_bg:
+            self.dwFlags |= STARTF_USEFILLATTRIBUTE
+            self.dwFillAttribute = WINDOWS_CODES['hibgwhite'] | WINDOWS_CODES['black']
 
 
 class ProcessInfo(ctypes.Structure):
@@ -71,19 +77,20 @@ class ProcessInfo(ctypes.Structure):
 
 
 @contextlib.contextmanager
-def run_new_console(command):
+def run_new_console(command, white_bg=False):
     """Run the command in a new console window. Windows only. Use in a with statement.
 
     subprocess sucks and really limits your access to the win32 API. Its implementation is half-assed. Using this so
-    that STARTUPINFO.lpTitle actually works.
+    that STARTUPINFO.lpTitle actually works and STARTUPINFO.dwFillAttribute produce the expected result.
 
     :param iter command: Command to run.
+    :param bool white_bg: New console window will be black text on white background.
 
     :return: Yields region the new window is in (left, upper, right, lower).
     :rtype: tuple
     """
     title = 'pytest-{0}-{1}'.format(os.getpid(), random.randint(1000, 9999)).encode('ascii')  # For FindWindow.
-    startup_info = StartupInfo(new_max_window=True, title=title)
+    startup_info = StartupInfo(new_max_window=True, title=title, white_bg=white_bg)
     process_info = ProcessInfo()
     command_str = subprocess.list2cmdline(command).encode('ascii')
 
