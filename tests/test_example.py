@@ -5,7 +5,8 @@ import sys
 
 import pytest
 
-from tests.conftest import IS_WINDOWS, PROJECT_ROOT
+from colorclass.windows import IS_WINDOWS
+from tests.conftest import PROJECT_ROOT
 from tests.screenshot import screenshot_until_match
 
 STARTF_USESHOWWINDOW = getattr(subprocess, 'STARTF_USESHOWWINDOW', 1)

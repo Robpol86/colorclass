@@ -7,8 +7,7 @@ import sys
 import pytest
 
 from colorclass.color import Color
-from colorclass.windows import Windows
-from tests.conftest import IS_WINDOWS
+from colorclass.windows import IS_WINDOWS, Windows
 
 pytestmark = pytest.mark.skipif(not IS_WINDOWS, reason='Requires windows.')
 

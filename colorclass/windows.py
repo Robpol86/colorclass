@@ -1,15 +1,25 @@
 """Windows console screen buffer handlers."""
 
 import atexit
-import ctypes
 import os
 import re
 import sys
 
+try:
+    import ctypes
+    import ctypes.wintypes
+    ctypes.LibraryLoader(getattr(ctypes, 'WinDLL', None))
+    import ctypes.windll
+except (ImportError, KeyError, ValueError):
+    pass
+
 from colorclass.codes import ANSICodeMapping, BASE_CODES
 from colorclass.core import RE_SPLIT
 
+IS_WINDOWS = sys.platform == 'win32'
 RE_NUMBER_SEARCH = re.compile(r'\033\[([\d;]+)m')
+STD_ERROR_HANDLE = -12
+STD_OUTPUT_HANDLE = -11
 WINDOWS_CODES = {
     '/all': -33, '/fg': -39, '/bg': -49,
 
@@ -49,10 +59,8 @@ class WindowsCSBI(object):
     """
 
     CSBI = None
-    HANDLE_STDERR = None
-    HANDLE_STDOUT = None
-    WINDLL = ctypes.LibraryLoader(getattr(ctypes, 'WinDLL', None))
-    WINTYPES = __import__('ctypes.wintypes').wintypes if os.name == 'nt' else None
+    HANDLE_STDERR = ctypes.windll.kernel32.GetStdHandle(STD_ERROR_HANDLE) if IS_WINDOWS else None
+    HANDLE_STDOUT = ctypes.windll.kernel32.GetStdHandle(STD_OUTPUT_HANDLE) if IS_WINDOWS else None
 
     @staticmethod
     def _define_csbi():
@@ -80,7 +88,7 @@ class WindowsCSBI(object):
             _fields_ = [
                 ('dwSize', COORD),
                 ('dwCursorPosition', COORD),
-                ('wAttributes', WindowsCSBI.WINTYPES.WORD),
+                ('wAttributes', ctypes.wintypes.WORD),
                 ('srWindow', SmallRECT),
                 ('dwMaximumWindowSize', COORD)
             ]
@@ -91,16 +99,14 @@ class WindowsCSBI(object):
     def initialize():
         """Initialize the WINDLL resource and populated the CSBI class variable."""
         WindowsCSBI._define_csbi()
-        WindowsCSBI.HANDLE_STDERR = WindowsCSBI.HANDLE_STDERR or WindowsCSBI.WINDLL.kernel32.GetStdHandle(-12)
-        WindowsCSBI.HANDLE_STDOUT = WindowsCSBI.HANDLE_STDOUT or WindowsCSBI.WINDLL.kernel32.GetStdHandle(-11)
-        if WindowsCSBI.WINDLL.kernel32.GetConsoleScreenBufferInfo.argtypes:
+        if ctypes.windll.kernel32.GetConsoleScreenBufferInfo.argtypes:
             return
 
-        WindowsCSBI.WINDLL.kernel32.GetStdHandle.argtypes = [WindowsCSBI.WINTYPES.DWORD]
-        WindowsCSBI.WINDLL.kernel32.GetStdHandle.restype = WindowsCSBI.WINTYPES.HANDLE
-        WindowsCSBI.WINDLL.kernel32.GetConsoleScreenBufferInfo.restype = WindowsCSBI.WINTYPES.BOOL
-        WindowsCSBI.WINDLL.kernel32.GetConsoleScreenBufferInfo.argtypes = [
-            WindowsCSBI.WINTYPES.HANDLE, ctypes.POINTER(WindowsCSBI.CSBI)
+        ctypes.windll.kernel32.GetStdHandle.argtypes = [ctypes.wintypes.DWORD]
+        ctypes.windll.kernel32.GetStdHandle.restype = ctypes.wintypes.HANDLE
+        ctypes.windll.kernel32.GetConsoleScreenBufferInfo.restype = ctypes.wintypes.BOOL
+        ctypes.windll.kernel32.GetConsoleScreenBufferInfo.argtypes = [
+            ctypes.wintypes.HANDLE, ctypes.POINTER(WindowsCSBI.CSBI)
         ]
 
     @staticmethod
@@ -127,7 +133,7 @@ class WindowsCSBI(object):
         # Query Win32 API.
         csbi = WindowsCSBI.CSBI()
         try:
-            if not WindowsCSBI.WINDLL.kernel32.GetConsoleScreenBufferInfo(handle, ctypes.byref(csbi)):
+            if not ctypes.windll.kernel32.GetConsoleScreenBufferInfo(handle, ctypes.byref(csbi)):
                 raise IOError('Unable to get console screen buffer info from win32 API.')
         except ctypes.ArgumentError:
             raise IOError('Unable to get console screen buffer info from win32 API.')
@@ -234,7 +240,7 @@ class WindowsStreamStdOut(object):
 
         # Set new code.
         stream_handle_name = getattr(WindowsCSBI, self.WIN32_STREAM_HANDLE_NAME)
-        WindowsCSBI.WINDLL.kernel32.SetConsoleTextAttribute(stream_handle_name, final_color_code)
+        ctypes.windll.kernel32.SetConsoleTextAttribute(stream_handle_name, final_color_code)
 
     def write(self, p_str):
         """Write to stream.

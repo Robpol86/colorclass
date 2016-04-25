@@ -9,7 +9,7 @@ import time
 import pytest
 
 from colorclass.codes import ANSICodeMapping, BASE_CODES, list_tags
-from tests.conftest import IS_WINDOWS
+from colorclass.windows import IS_WINDOWS
 
 
 def test_ansi_code_mapping_whitelist():

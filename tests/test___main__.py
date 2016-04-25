@@ -5,7 +5,7 @@ import sys
 
 import pytest
 
-from tests.conftest import IS_WINDOWS
+from colorclass.windows import IS_WINDOWS
 
 
 def test_import_do_nothing():
