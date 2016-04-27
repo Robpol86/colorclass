@@ -1,17 +1,9 @@
 """Windows console screen buffer handlers."""
 
 import atexit
-import os
+import ctypes
 import re
 import sys
-
-try:
-    import ctypes
-    import ctypes.wintypes
-    ctypes.LibraryLoader(getattr(ctypes, 'WinDLL', None))
-    import ctypes.windll
-except (ImportError, KeyError, ValueError):
-    pass
 
 from colorclass.codes import ANSICodeMapping, BASE_CODES
 from colorclass.core import RE_SPLIT
@@ -43,115 +35,104 @@ WINDOWS_CODES = {
 }
 
 
-class WindowsCSBI(object):
-    """Interface with Windows CONSOLE_SCREEN_BUFFER_INFO API/DLL calls. Gets info for stderr and stdout.
+class COORD(ctypes.Structure):
+    """COORD structure. http://msdn.microsoft.com/en-us/library/windows/desktop/ms682119."""
 
-    References:
-        http://msdn.microsoft.com/en-us/library/windows/desktop/ms683231
-        https://code.google.com/p/colorama/issues/detail?id=47.
-        pytest's py project: py/_io/terminalwriter.py.
+    _fields_ = [
+        ('X', ctypes.c_short),
+        ('Y', ctypes.c_short),
+    ]
 
-    Class variables:
-    CSBI -- ConsoleScreenBufferInfo class/struct (not instance, the class definition itself) defined in _define_csbi().
-    HANDLE_STDERR -- GetStdHandle() return integer for stderr.
-    HANDLE_STDOUT -- GetStdHandle() return integer for stdout.
-    WINDLL -- my own loaded instance of ctypes.WinDLL.
+
+class SmallRECT(ctypes.Structure):
+    """SMALL_RECT structure. http://msdn.microsoft.com/en-us/library/windows/desktop/ms686311."""
+
+    _fields_ = [
+        ('Left', ctypes.c_short),
+        ('Top', ctypes.c_short),
+        ('Right', ctypes.c_short),
+        ('Bottom', ctypes.c_short),
+    ]
+
+
+class ConsoleScreenBufferInfo(ctypes.Structure):
+    """CONSOLE_SCREEN_BUFFER_INFO structure. http://msdn.microsoft.com/en-us/library/windows/desktop/ms682093."""
+
+    _fields_ = [
+        ('dwSize', COORD),
+        ('dwCursorPosition', COORD),
+        ('wAttributes', ctypes.c_ushort),
+        ('srWindow', SmallRECT),
+        ('dwMaximumWindowSize', COORD)
+    ]
+
+
+def init_kernel32():
+    """Load a unique instance of WinDLL into memory, set arg/return types, and get stdout/err handles.
+
+    :raise AttributeError: When called on a non-Windows platform.
+
+    1. Since we are setting DLL function argument types and return types, we need to maintain our own instance of
+       kernel32 to prevent overriding (or being overwritten by) user's own changes to ctypes.windll.kernel32.
+    2. While we're doing all this we might as well get the handles to STDOUT and STDERR streams.
+
+    :return: Loaded kernel32 instance, stderr handle (int), and stdout handle (int).
+    :rtype: tuple
     """
+    kernel32 = ctypes.LibraryLoader(ctypes.WinDLL).kernel32  # Load our own instance. Unique memory address.
 
-    CSBI = None
-    HANDLE_STDERR = ctypes.windll.kernel32.GetStdHandle(STD_ERROR_HANDLE) if IS_WINDOWS else None
-    HANDLE_STDOUT = ctypes.windll.kernel32.GetStdHandle(STD_OUTPUT_HANDLE) if IS_WINDOWS else None
+    # Setup GetStdHandle.
+    kernel32.GetStdHandle.argtypes = [ctypes.c_ulong]
+    kernel32.GetStdHandle.restype = ctypes.c_void_p
 
-    @staticmethod
-    def _define_csbi():
-        """Define structs and populates WindowsCSBI.CSBI."""
-        if WindowsCSBI.CSBI is not None:
-            return
+    # Setup GetConsoleScreenBufferInfo.
+    kernel32.GetConsoleScreenBufferInfo.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ConsoleScreenBufferInfo),
+    ]
+    kernel32.GetConsoleScreenBufferInfo.restype = ctypes.c_long
 
-        class COORD(ctypes.Structure):
-            """Windows COORD structure. http://msdn.microsoft.com/en-us/library/windows/desktop/ms682119."""
+    # Get handles.
+    stderr = kernel32.GetStdHandle(STD_ERROR_HANDLE)
+    stdout = kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
 
-            _fields_ = [('X', ctypes.c_short), ('Y', ctypes.c_short)]
+    return kernel32, stderr, stdout
 
-        class SmallRECT(ctypes.Structure):
-            """Windows SMALL_RECT structure. http://msdn.microsoft.com/en-us/library/windows/desktop/ms686311."""
 
-            _fields_ = [('Left', ctypes.c_short), ('Top', ctypes.c_short), ('Right', ctypes.c_short),
-                        ('Bottom', ctypes.c_short)]
+def get_console_info(kernel32, handle):
+    """Get information about this current console window.
 
-        class ConsoleScreenBufferInfo(ctypes.Structure):
-            """Windows CONSOLE_SCREEN_BUFFER_INFO structure.
+    http://msdn.microsoft.com/en-us/library/windows/desktop/ms683231
+    https://code.google.com/p/colorama/issues/detail?id=47
+    https://bitbucket.org/pytest-dev/py/src/4617fe46/py/_io/terminalwriter.py
 
-            http://msdn.microsoft.com/en-us/library/windows/desktop/ms682093
-            """
+    :param ctypes.windll.kernel32 kernel32: Loaded kernel32 instance.
+    :param int handle: stderr or stdout handle.
 
-            _fields_ = [
-                ('dwSize', COORD),
-                ('dwCursorPosition', COORD),
-                ('wAttributes', ctypes.wintypes.WORD),
-                ('srWindow', SmallRECT),
-                ('dwMaximumWindowSize', COORD)
-            ]
-
-        WindowsCSBI.CSBI = ConsoleScreenBufferInfo
-
-    @staticmethod
-    def initialize():
-        """Initialize the WINDLL resource and populated the CSBI class variable."""
-        WindowsCSBI._define_csbi()
-        if ctypes.windll.kernel32.GetConsoleScreenBufferInfo.argtypes:
-            return
-
-        ctypes.windll.kernel32.GetStdHandle.argtypes = [ctypes.wintypes.DWORD]
-        ctypes.windll.kernel32.GetStdHandle.restype = ctypes.wintypes.HANDLE
-        ctypes.windll.kernel32.GetConsoleScreenBufferInfo.restype = ctypes.wintypes.BOOL
-        ctypes.windll.kernel32.GetConsoleScreenBufferInfo.argtypes = [
-            ctypes.wintypes.HANDLE, ctypes.POINTER(WindowsCSBI.CSBI)
-        ]
-
-    @staticmethod
-    def get_info(handle):
-        """Get information about this current console window (for Microsoft Windows only).
-
-        Don't forget to call WindowsCSBI.initialize() once in your application before calling this method.
-
-        Returns dictionary with different integer values. Keys are:
-            buffer_width -- width of the buffer (Screen Buffer Size in cmd.exe layout tab).
-            buffer_height -- height of the buffer (Screen Buffer Size in cmd.exe layout tab).
-            terminal_width -- width of the terminal window.
-            terminal_height -- height of the terminal window.
-            bg_color -- current background color (http://msdn.microsoft.com/en-us/library/windows/desktop/ms682088).
-            fg_color -- current text color code.
-
-        :raise IOError: If attempt to get information fails (if there is no console window).
-
-        :param handle: Either WindowsCSBI.HANDLE_STDERR or WindowsCSBI.HANDLE_STDOUT.
-
-        :return: Terminal info.
-        :rtype: dict
-        """
-        # Query Win32 API.
-        csbi = WindowsCSBI.CSBI()
-        try:
-            if not ctypes.windll.kernel32.GetConsoleScreenBufferInfo(handle, ctypes.byref(csbi)):
-                raise IOError('Unable to get console screen buffer info from win32 API.')
-        except ctypes.ArgumentError:
+    :return: Foreground and background colors (integers).
+    :rtype: tuple
+    """
+    # Query Win32 API.
+    csbi = ConsoleScreenBufferInfo()  # Populated by GetConsoleScreenBufferInfo.
+    try:
+        if not kernel32.GetConsoleScreenBufferInfo(handle, ctypes.byref(csbi)):
             raise IOError('Unable to get console screen buffer info from win32 API.')
+    except ctypes.ArgumentError:
+        raise IOError('Unable to get console screen buffer info from win32 API.')
 
-        # Parse data.
-        result = dict(
-            buffer_width=int(csbi.dwSize.X - 1),
-            buffer_height=int(csbi.dwSize.Y),
-            terminal_width=int(csbi.srWindow.Right - csbi.srWindow.Left),
-            terminal_height=int(csbi.srWindow.Bottom - csbi.srWindow.Top),
-            bg_color=int(csbi.wAttributes & 240),
-            fg_color=int(csbi.wAttributes % 16),
-        )
-        return result
+    # Parse data.
+    # buffer_width = int(csbi.dwSize.X - 1)
+    # buffer_height = int(csbi.dwSize.Y)
+    # terminal_width = int(csbi.srWindow.Right - csbi.srWindow.Left)
+    # terminal_height = int(csbi.srWindow.Bottom - csbi.srWindow.Top)
+    fg_color = csbi.wAttributes % 16
+    bg_color = csbi.wAttributes & 240
+
+    return fg_color, bg_color
 
 
-class WindowsStreamStdOut(object):
-    """Replacement stream which overrides sys.stdout. When writing or printing, ANSI codes are converted.
+class WindowsStream(object):
+    """Replacement stream which overrides sys.stdout or sys.stderr. When writing or printing, ANSI codes are converted.
 
     ANSI (Linux/Unix) color codes are converted into win32 system calls, changing the next character's color before
     printing it. Resources referenced:
@@ -163,52 +144,51 @@ class WindowsStreamStdOut(object):
         http://stackoverflow.com/questions/287871/print-in-terminal-with-colors-using-python
         http://msdn.microsoft.com/en-us/library/windows/desktop/ms682088#_win32_character_attributes
 
-    Class variables:
-    ALL_BG_CODES -- list of background Windows codes. Used to determine if requested color is foreground or background.
-    COMPILED_CODES -- 'translation' dictionary. Keys are ANSI codes (values of BASE_CODES), values are Windows codes.
-    ORIGINAL_STREAM -- the original stream to write non-code text to.
-    WIN32_STREAM_HANDLE_NAME -- handle to the Windows stdout device. Used by other Windows functions.
-
-    Instance variables:
-    default_fg -- the foreground Windows color code at the time of instantiation.
-    default_bg -- the background Windows color code at the time of instantiation.
+    :cvar list ALL_BG_CODES: List of bg Windows codes. Used to determine if requested color is foreground or background.
+    :cvar dict COMPILED_CODES: Translation dict. Keys are ANSI codes (values of BASE_CODES), values are Windows codes.
+    :ivar int default_fg: Foreground Windows color code at the time of instantiation.
+    :ivar int default_bg: Background Windows color code at the time of instantiation.
     """
 
     ALL_BG_CODES = [v for k, v in WINDOWS_CODES.items() if k.startswith('bg') or k.startswith('hibg')]
     COMPILED_CODES = dict((v, WINDOWS_CODES[k]) for k, v in BASE_CODES.items() if k in WINDOWS_CODES)
-    ORIGINAL_STREAM = sys.stdout
-    WIN32_STREAM_HANDLE_NAME = 'HANDLE_STDOUT'
 
-    def __init__(self):
-        """Constructor."""
-        WindowsCSBI.initialize()
-        self.default_fg, self.default_bg = self._get_colors()
-        for attr in dir(self.ORIGINAL_STREAM):
+    def __init__(self, kernel32, stream_handle, original_stream):
+        """Constructor.
+
+        :param ctypes.windll.kernel32 kernel32: Loaded kernel32 instance.
+        :param int stream_handle: stderr or stdout handle.
+        :param original_stream: sys.stderr or sys.stdout before being overridden by this class' instance.
+        """
+        self._kernel32 = kernel32
+        self._stream_handle = stream_handle
+        self._original_stream = original_stream
+        self.default_fg, self.default_bg = self.colors
+        for attr in dir(original_stream):
             if hasattr(self, attr):
                 continue
-            setattr(self, attr, getattr(self.ORIGINAL_STREAM, attr))
+            setattr(self, attr, getattr(original_stream, attr))
 
     def __getattr__(self, item):
         """If an attribute/function/etc is not defined in this function, retrieve the one from the original stream.
 
         Fixes ipython arrow key presses.
         """
-        return getattr(self.ORIGINAL_STREAM, item)
+        return getattr(self._original_stream, item)
 
-    def _get_colors(self):
-        """Return a tuple of two integers representing current colors: (foreground, background)."""
+    @property
+    def colors(self):
+        """Return the current foreground and background colors."""
         try:
-            csbi = WindowsCSBI.get_info(getattr(WindowsCSBI, self.WIN32_STREAM_HANDLE_NAME))
-            return csbi['fg_color'], csbi['bg_color']
+            return get_console_info(self._kernel32, self._stream_handle)
         except IOError:
-            return 7, 0
+            return WINDOWS_CODES['white'], WINDOWS_CODES['black']
 
-    def _reset_colors(self):
-        """Set the foreground and background colors to their original values (when class was instantiated)."""
-        self._set_color(-33)
-
-    def _set_color(self, color_code):
+    @colors.setter
+    def colors(self, color_code):
         """Change the foreground and background colors for subsequently printed characters.
+
+        None resets colors to their original values (when class was instantiated).
 
         Since setting a color requires including both foreground and background codes (merged), setting just the
         foreground color resets the background color to black, and vice versa.
@@ -222,25 +202,27 @@ class WindowsStreamStdOut(object):
 
         :param int color_code: Color code from WINDOWS_CODES.
         """
+        if color_code is None:
+            color_code = WINDOWS_CODES['/all']
+
         # Get current color code.
-        current_fg, current_bg = self._get_colors()
+        current_fg, current_bg = self.colors
 
         # Handle special negative codes. Also determine the final color code.
-        if color_code == -39:
+        if color_code == WINDOWS_CODES['/fg']:
             final_color_code = self.default_fg | current_bg  # Reset the foreground only.
-        elif color_code == -49:
+        elif color_code == WINDOWS_CODES['/bg']:
             final_color_code = current_fg | self.default_bg  # Reset the background only.
-        elif color_code == -33:
+        elif color_code == WINDOWS_CODES['/all']:
             final_color_code = self.default_fg | self.default_bg  # Reset both.
-        elif color_code == -8:
+        elif color_code == WINDOWS_CODES['bgblack']:
             final_color_code = current_fg  # Black background.
         else:
             new_is_bg = color_code in self.ALL_BG_CODES
             final_color_code = color_code | (current_fg if new_is_bg else current_bg)
 
         # Set new code.
-        stream_handle_name = getattr(WindowsCSBI, self.WIN32_STREAM_HANDLE_NAME)
-        ctypes.windll.kernel32.SetConsoleTextAttribute(stream_handle_name, final_color_code)
+        self._kernel32.SetConsoleTextAttribute(self._stream_handle, final_color_code)
 
     def write(self, p_str):
         """Write to stream.
@@ -253,19 +235,12 @@ class WindowsStreamStdOut(object):
                 continue
             if not RE_SPLIT.match(segment):
                 # No color codes, print regular text.
-                self.ORIGINAL_STREAM.write(segment)
-                self.ORIGINAL_STREAM.flush()
+                self._original_stream.write(segment)
+                self._original_stream.flush()
                 continue
             for color_code in (int(c) for c in RE_NUMBER_SEARCH.findall(segment)[0].split(';')):
                 if color_code in self.COMPILED_CODES:
-                    self._set_color(self.COMPILED_CODES[color_code])
-
-
-class WindowsStreamStdErr(WindowsStreamStdOut):
-    """Replacement stream which overrides sys.stderr. Subclasses WindowsStreamStdOut."""
-
-    ORIGINAL_STREAM = sys.stderr
-    WIN32_STREAM_HANDLE_NAME = 'HANDLE_STDERR'
+                    self.colors = self.COMPILED_CODES[color_code]
 
 
 class Windows(object):
@@ -289,23 +264,28 @@ class Windows(object):
         :return: If streams restored successfully.
         :rtype: bool
         """
-        if os.name != 'nt' or not cls.is_enabled():
+        # Skip if not on Windows or not enabled.
+        if not IS_WINDOWS or not cls.is_enabled():
             return False
 
-        getattr(sys.stderr, '_reset_colors', lambda: False)()
-        getattr(sys.stdout, '_reset_colors', lambda: False)()
+        # Restore default colors.
+        if hasattr(sys.stderr, 'color'):
+            getattr(sys, 'stderr').color = None
+        if hasattr(sys.stdout, 'color'):
+            getattr(sys, 'stdout').color = None
 
-        if hasattr(sys.stderr, 'ORIGINAL_STREAM'):
-            sys.stderr = getattr(sys.stderr, 'ORIGINAL_STREAM')
-        if hasattr(sys.stdout, 'ORIGINAL_STREAM'):
-            sys.stdout = getattr(sys.stdout, 'ORIGINAL_STREAM')
+        # Restore original streams.
+        if hasattr(sys.stderr, '_original_stream'):
+            sys.stderr = getattr(sys.stderr, '_original_stream')
+        if hasattr(sys.stdout, '_original_stream'):
+            sys.stdout = getattr(sys.stdout, '_original_stream')
 
         return True
 
     @staticmethod
     def is_enabled():
         """Return True if either stderr or stdout has colors enabled."""
-        return hasattr(sys.stderr, 'ORIGINAL_STREAM') or hasattr(sys.stdout, 'ORIGINAL_STREAM')
+        return hasattr(sys.stderr, '_original_stream') or hasattr(sys.stdout, '_original_stream')
 
     @classmethod
     def enable(cls, auto_colors=False, reset_atexit=False):
@@ -319,18 +299,21 @@ class Windows(object):
         :return: If streams replaced successfully.
         :rtype: bool
         """
-        if os.name != 'nt':
-            return False
+        if not IS_WINDOWS:
+            return False  # Windows only.
+        if hasattr(sys.stderr, '_original_stream') and hasattr(sys.stdout, '_original_stream'):
+            return False  # Nothing to do.
 
         # Overwrite stream references.
-        if not hasattr(sys.stderr, 'ORIGINAL_STREAM'):
+        kernel32, stderr, stdout = init_kernel32()
+        if not hasattr(sys.stderr, '_original_stream'):
             sys.stderr.flush()
-            sys.stderr = WindowsStreamStdErr()
-        if not hasattr(sys.stdout, 'ORIGINAL_STREAM'):
+            sys.stderr = WindowsStream(kernel32, stderr, sys.stderr)
+        if not hasattr(sys.stdout, '_original_stream'):
             sys.stdout.flush()
-            sys.stdout = WindowsStreamStdOut()
-        if not hasattr(sys.stderr, 'ORIGINAL_STREAM') and not hasattr(sys.stdout, 'ORIGINAL_STREAM'):
-            return False
+            sys.stdout = WindowsStream(kernel32, stdout, sys.stdout)
+        if not hasattr(sys.stderr, '_original_stream') and not hasattr(sys.stdout, '_original_stream'):
+            return False  # Something failed.
 
         # Automatically select which colors to display.
         bg_color = getattr(sys.stdout, 'default_bg', getattr(sys.stderr, 'default_bg', None))

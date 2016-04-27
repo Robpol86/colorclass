@@ -129,11 +129,16 @@ def run_new_console(command, white_bg=False):
 
     # Verify process exited 0.
     status = ctypes.c_ulong(STILL_ACTIVE)
-    while status.value == STILL_ACTIVE:
-        time.sleep(0.1)
-        res = ctypes.windll.kernel32.GetExitCodeProcess(process_info.hProcess, ctypes.byref(status))
-        assert res
-    assert status.value == 0
+    try:
+        while status.value == STILL_ACTIVE:
+            time.sleep(0.1)
+            res = ctypes.windll.kernel32.GetExitCodeProcess(process_info.hProcess, ctypes.byref(status))
+            assert res
+        assert status.value == 0
+    finally:
+        # Close handles.
+        assert ctypes.windll.kernel32.CloseHandle(process_info.hProcess)
+        assert ctypes.windll.kernel32.CloseHandle(process_info.hThread)
 
 
 def iter_rows(pil_image):

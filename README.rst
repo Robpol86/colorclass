@@ -132,6 +132,12 @@ Changelog
 
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+Unreleased
+----------
+
+Changed
+    * Refactored most of windows.py.
+
 2.0.0 - 2016-04-10
 ------------------
 
