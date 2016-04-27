@@ -1,6 +1,5 @@
 """Take screenshots and search for subimages in images."""
 
-import contextlib
 import ctypes
 import os
 import random
@@ -76,69 +75,85 @@ class ProcessInfo(ctypes.Structure):
     ]
 
 
-@contextlib.contextmanager
-def run_new_console(command, white_bg=False):
+class RunNewConsole(object):
     """Run the command in a new console window. Windows only. Use in a with statement.
 
     subprocess sucks and really limits your access to the win32 API. Its implementation is half-assed. Using this so
     that STARTUPINFO.lpTitle actually works and STARTUPINFO.dwFillAttribute produce the expected result.
-
-    :param iter command: Command to run.
-    :param bool white_bg: New console window will be black text on white background.
-
-    :return: Yields region the new window is in (left, upper, right, lower).
-    :rtype: tuple
     """
-    title = 'pytest-{0}-{1}'.format(os.getpid(), random.randint(1000, 9999)).encode('ascii')  # For FindWindow.
-    startup_info = StartupInfo(new_max_window=True, title=title, white_bg=white_bg)
-    process_info = ProcessInfo()
-    command_str = subprocess.list2cmdline(command).encode('ascii')
 
-    # Run.
-    res = ctypes.windll.kernel32.CreateProcessA(
-        None,  # lpApplicationName
-        command_str,  # lpCommandLine
-        None,  # lpProcessAttributes
-        None,  # lpThreadAttributes
-        False,  # bInheritHandles
-        subprocess.CREATE_NEW_CONSOLE,  # dwCreationFlags
-        None,  # lpEnvironment
-        str(PROJECT_ROOT).encode('ascii'),  # lpCurrentDirectory
-        ctypes.byref(startup_info),  # lpStartupInfo
-        ctypes.byref(process_info)  # lpProcessInformation
-    )
-    assert res
+    def __init__(self, command, new_max_window=True, title=None, white_bg=False):
+        """Constructor.
 
-    # Get hWnd.
-    hwnd = 0
-    for _ in range(int(5 / 0.1)):
-        hwnd = ctypes.windll.user32.FindWindowA(None, title)  # Takes time for console window to initialize.
-        if hwnd:
-            break
-        time.sleep(0.1)
-    assert hwnd
+        :param iter command: Command to run.
+        :param bool new_max_window: Start process in new console window, maximized.
+        :param bool white_bg: New console window will be black text on white background.
+        :param bytes title: Set new window title to this.
+        """
+        if title is None:
+            title = 'pytest-{0}-{1}'.format(os.getpid(), random.randint(1000, 9999)).encode('ascii')  # For FindWindow.
+        self.startup_info = StartupInfo(new_max_window=new_max_window, title=title, white_bg=white_bg)
+        self.process_info = ProcessInfo()
+        self.command_str = subprocess.list2cmdline(command).encode('ascii')
 
-    # Get new console window's position and dimensions.
-    string_buffer = ctypes.create_string_buffer(16)  # To be written to by GetWindowRect.
-    ctypes.windll.user32.GetWindowRect(hwnd, string_buffer)
-    left, top, right, bottom = struct.unpack('llll', string_buffer.raw)
-    width, height = right - left, bottom - top
-    assert width > 1
-    assert height > 1
-    yield left, top, right, bottom
+    def __enter__(self):
+        """Entering the `with` block. Runs the process."""
+        res = ctypes.windll.kernel32.CreateProcessA(
+            None,  # lpApplicationName
+            self.command_str,  # lpCommandLine
+            None,  # lpProcessAttributes
+            None,  # lpThreadAttributes
+            False,  # bInheritHandles
+            subprocess.CREATE_NEW_CONSOLE,  # dwCreationFlags
+            None,  # lpEnvironment
+            str(PROJECT_ROOT).encode('ascii'),  # lpCurrentDirectory
+            ctypes.byref(self.startup_info),  # lpStartupInfo
+            ctypes.byref(self.process_info)  # lpProcessInformation
+        )
+        assert res
 
-    # Verify process exited 0.
-    status = ctypes.c_ulong(STILL_ACTIVE)
-    try:
-        while status.value == STILL_ACTIVE:
+        # Get hWnd.
+        self.hwnd = 0
+        for _ in range(int(5 / 0.1)):
+            # Takes time for console window to initialize.
+            self.hwnd = ctypes.windll.user32.FindWindowA(None, self.startup_info.lpTitle)
+            if self.hwnd:
+                break
             time.sleep(0.1)
-            res = ctypes.windll.kernel32.GetExitCodeProcess(process_info.hProcess, ctypes.byref(status))
-            assert res
-        assert status.value == 0
-    finally:
-        # Close handles.
-        assert ctypes.windll.kernel32.CloseHandle(process_info.hProcess)
-        assert ctypes.windll.kernel32.CloseHandle(process_info.hThread)
+        assert self.hwnd
+
+        # Return generator that yields window size/position.
+        return self._iter_pos()
+
+    def __exit__(self, *_):
+        """Cleanup."""
+        try:
+            # Verify process exited 0.
+            status = ctypes.c_ulong(STILL_ACTIVE)
+            while status.value == STILL_ACTIVE:
+                time.sleep(0.1)
+                res = ctypes.windll.kernel32.GetExitCodeProcess(self.process_info.hProcess, ctypes.byref(status))
+                assert res
+            assert status.value == 0
+        finally:
+            # Close handles.
+            assert ctypes.windll.kernel32.CloseHandle(self.process_info.hProcess)
+            assert ctypes.windll.kernel32.CloseHandle(self.process_info.hThread)
+
+    def _iter_pos(self):
+        """Yield new console window's current position and dimensions.
+
+        :return: Yields region the new window is in (left, upper, right, lower).
+        :rtype: tuple
+        """
+        rect = ctypes.create_string_buffer(16)  # To be written to by GetWindowRect. RECT structure.
+        while ctypes.windll.user32.GetWindowRect(self.hwnd, rect):
+            left, top, right, bottom = struct.unpack('llll', rect.raw)
+            width, height = right - left, bottom - top
+            assert width > 1
+            assert height > 1
+            yield left, top, right, bottom
+        raise StopIteration
 
 
 def iter_rows(pil_image):

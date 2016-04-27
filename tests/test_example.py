@@ -7,7 +7,7 @@ import pytest
 
 from colorclass.windows import IS_WINDOWS
 from tests.conftest import PROJECT_ROOT
-from tests.screenshot import run_new_console, screenshot_until_match
+from tests.screenshot import RunNewConsole, screenshot_until_match
 
 
 @pytest.mark.parametrize('colors', [True, False, None])
@@ -92,5 +92,6 @@ def test_windows_screenshot(colors, light_bg):
     assert candidates
 
     # Run.
-    with run_new_console(command, white_bg=light_bg) as box:
-        assert screenshot_until_match(str(screenshot), 10, [str(p) for p in candidates], expected_count, box)
+    with RunNewConsole(command, white_bg=light_bg) as pos:
+        box = next(pos)
+        assert screenshot_until_match(str(screenshot), 15, [str(p) for p in candidates], expected_count, box)

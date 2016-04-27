@@ -217,7 +217,7 @@ def main():
 
     if OPTIONS['--wait']:
         print('Waiting for {0} to exist within 10 seconds...'.format(OPTIONS['--wait']), file=sys.stderr, end='')
-        stop_after = time.time() + 15
+        stop_after = time.time() + 20
         while not os.path.exists(OPTIONS['--wait']) and time.time() < stop_after:
             print('.', file=sys.stderr, end='')
             sys.stderr.flush()
