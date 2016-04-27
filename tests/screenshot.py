@@ -88,13 +88,19 @@ class RunNewConsole(object):
         :param iter command: Command to run.
         :param bool new_max_window: Start process in new console window, maximized.
         :param bool white_bg: New console window will be black text on white background.
-        :param bytes title: Set new window title to this.
+        :param bytes title: Set new window title to this. Needed by user32.FindWindow.
         """
         if title is None:
-            title = 'pytest-{0}-{1}'.format(os.getpid(), random.randint(1000, 9999)).encode('ascii')  # For FindWindow.
+            title = 'pytest-{0}-{1}'.format(os.getpid(), random.randint(1000, 9999)).encode('ascii')
         self.startup_info = StartupInfo(new_max_window=new_max_window, title=title, white_bg=white_bg)
         self.process_info = ProcessInfo()
         self.command_str = subprocess.list2cmdline(command).encode('ascii')
+        self.handles = list()
+
+    def __del__(self):
+        """Close win32 handles."""
+        for handle in self.handles:
+            ctypes.windll.kernel32.CloseHandle(handle)
 
     def __enter__(self):
         """Entering the `with` block. Runs the process."""
@@ -111,6 +117,10 @@ class RunNewConsole(object):
             ctypes.byref(self.process_info)  # lpProcessInformation
         )
         assert res
+
+        # Add handles added by the OS.
+        self.handles.append(self.process_info.hProcess)
+        self.handles.append(self.process_info.hThread)
 
         # Get hWnd.
         self.hwnd = 0
@@ -137,8 +147,7 @@ class RunNewConsole(object):
             assert status.value == 0
         finally:
             # Close handles.
-            assert ctypes.windll.kernel32.CloseHandle(self.process_info.hProcess)
-            assert ctypes.windll.kernel32.CloseHandle(self.process_info.hThread)
+            self.__del__()
 
     def _iter_pos(self):
         """Yield new console window's current position and dimensions.
