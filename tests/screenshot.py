@@ -173,7 +173,7 @@ class RunNewConsole(object):
     def _setup_stdin(self):
         """Setup stdin pipe to allow Python to write to the window's stdin."""
         sec_attr = SecurityAttributes()
-        sec_attr.lpSecurityDescriptor = True
+        sec_attr.bInheritHandle = True
 
         # Create pipe.
         h_stdin_r, h_stdin_w = ctypes.c_ulong(), ctypes.c_ulong()
