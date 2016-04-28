@@ -157,13 +157,15 @@ class RunNewConsole(object):
 
     def _setup_stdin(self):
         """Setup stdin pipe to allow Python to write to the window's stdin."""
+        sec_attr = struct.pack('LPl', struct.Struct('LPl').size, True, 0)  # SECURITY_ATTRIBUTES
+
         # Create pipe.
         h_stdin_r, h_stdin_w = ctypes.c_ulong(), ctypes.c_ulong()
         res = ctypes.windll.kernel32.CreatePipe(
             ctypes.byref(h_stdin_r),
             ctypes.byref(h_stdin_w),
-            None,
-            ctypes.c_ulong(4096),
+            ctypes.byref(sec_attr),  # Without this stdin drops everything.
+            0,  # nSize (0 = system default).
         )
         assert res
         self._handles.append(h_stdin_r.value)
@@ -193,7 +195,7 @@ class RunNewConsole(object):
             assert height > 1
             text = (yield left, top, right, bottom)
             if text:
-                ctypes.windll.kernel32.WriteFile(self._stdin, text, len(text), None, None)
+                assert ctypes.windll.kernel32.WriteFile(self._stdin, text, len(text), None, None)
         raise StopIteration
 
 
