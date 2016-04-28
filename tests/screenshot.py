@@ -130,7 +130,7 @@ class RunNewConsole(object):
             self.command_str,  # lpCommandLine
             None,  # lpProcessAttributes
             None,  # lpThreadAttributes
-            False,  # bInheritHandles
+            True,  # bInheritHandles
             subprocess.CREATE_NEW_CONSOLE,  # dwCreationFlags
             None,  # lpEnvironment
             str(PROJECT_ROOT).encode('ascii'),  # lpCurrentDirectory
