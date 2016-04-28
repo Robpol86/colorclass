@@ -77,6 +77,21 @@ class ProcessInfo(ctypes.Structure):
     ]
 
 
+class SecurityAttributes(ctypes.Structure):
+    """SECURITY_ATTRIBUTES structure."""
+
+    _fields_ = [
+        ('nLength', ctypes.c_ulong),
+        ('lpSecurityDescriptor', ctypes.c_void_p),
+        ('bInheritHandle', ctypes.c_long),
+    ]
+
+    def __init__(self):
+        """Constructor."""
+        super(SecurityAttributes, self).__init__()
+        self.nLength = ctypes.sizeof(self)
+
+
 class RunNewConsole(object):
     """Run the command in a new console window. Windows only. Use in a with statement.
 
@@ -157,7 +172,8 @@ class RunNewConsole(object):
 
     def _setup_stdin(self):
         """Setup stdin pipe to allow Python to write to the window's stdin."""
-        sec_attr = struct.pack('LPl', struct.Struct('LPl').size, True, 0)  # SECURITY_ATTRIBUTES
+        sec_attr = SecurityAttributes()
+        sec_attr.lpSecurityDescriptor = True
 
         # Create pipe.
         h_stdin_r, h_stdin_w = ctypes.c_ulong(), ctypes.c_ulong()
