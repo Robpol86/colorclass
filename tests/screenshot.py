@@ -15,8 +15,10 @@ except ImportError:
 from colorclass.windows import WINDOWS_CODES
 from tests.conftest import PROJECT_ROOT
 
+HANDLE_FLAG_INHERIT = 0x00000001
 STARTF_USEFILLATTRIBUTE = 0x00000010
 STARTF_USESHOWWINDOW = getattr(subprocess, 'STARTF_USESHOWWINDOW', 1)
+STARTF_USESTDHANDLES = getattr(subprocess, 'STARTF_USESTDHANDLES', 256)
 STILL_ACTIVE = 259
 SW_MAXIMIZE = 3
 
@@ -95,12 +97,16 @@ class RunNewConsole(object):
         self.startup_info = StartupInfo(new_max_window=new_max_window, title=title, white_bg=white_bg)
         self.process_info = ProcessInfo()
         self.command_str = subprocess.list2cmdline(command).encode('ascii')
-        self.handles = list()
+        self._handles = list()
+        self._stdin = self._setup_stdin()
 
     def __del__(self):
         """Close win32 handles."""
-        for handle in self.handles:
-            ctypes.windll.kernel32.CloseHandle(handle)
+        while self._handles:
+            try:
+                ctypes.windll.kernel32.CloseHandle(self._handles.pop(0))  # .pop() is thread safe.
+            except IndexError:
+                break
 
     def __enter__(self):
         """Entering the `with` block. Runs the process."""
@@ -119,8 +125,8 @@ class RunNewConsole(object):
         assert res
 
         # Add handles added by the OS.
-        self.handles.append(self.process_info.hProcess)
-        self.handles.append(self.process_info.hThread)
+        self._handles.append(self.process_info.hProcess)
+        self._handles.append(self.process_info.hThread)
 
         # Get hWnd.
         self.hwnd = 0
@@ -149,8 +155,32 @@ class RunNewConsole(object):
             # Close handles.
             self.__del__()
 
+    def _setup_stdin(self):
+        """Setup stdin pipe to allow Python to write to the window's stdin."""
+        # Create pipe.
+        h_stdin_r, h_stdin_w = ctypes.c_void_p(), ctypes.c_void_p()
+        res = ctypes.windll.kernel32.CreatePipe(
+            ctypes.byref(h_stdin_r),
+            ctypes.byref(h_stdin_w),
+            None,
+            ctypes.c_ulong(4096),
+        )
+        assert res
+        self._handles.append(h_stdin_r.value)
+        self._handles.append(h_stdin_w.value)
+        res = ctypes.windll.kernel32.SetHandleInformation(h_stdin_w, HANDLE_FLAG_INHERIT, 0)
+        assert res
+
+        # Update STARTUPINFO.
+        self.startup_info.dwFlags |= STARTF_USESTDHANDLES
+        self.startup_info.hStdInput = h_stdin_r
+
+        return h_stdin_w
+
     def _iter_pos(self):
         """Yield new console window's current position and dimensions.
+
+        If this generator's send method is called, data is sent to new console window's stdin handle.
 
         :return: Yields region the new window is in (left, upper, right, lower).
         :rtype: tuple
@@ -161,7 +191,9 @@ class RunNewConsole(object):
             width, height = right - left, bottom - top
             assert width > 1
             assert height > 1
-            yield left, top, right, bottom
+            text = (yield left, top, right, bottom)
+            if text:
+                ctypes.windll.kernel32.WriteFile(self._stdin, text, len(text), None, None)
         raise StopIteration
 
 
