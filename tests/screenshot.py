@@ -158,7 +158,7 @@ class RunNewConsole(object):
     def _setup_stdin(self):
         """Setup stdin pipe to allow Python to write to the window's stdin."""
         # Create pipe.
-        h_stdin_r, h_stdin_w = ctypes.c_void_p(), ctypes.c_void_p()
+        h_stdin_r, h_stdin_w = ctypes.c_ulong(), ctypes.c_ulong()
         res = ctypes.windll.kernel32.CreatePipe(
             ctypes.byref(h_stdin_r),
             ctypes.byref(h_stdin_w),
@@ -175,7 +175,7 @@ class RunNewConsole(object):
         self.startup_info.dwFlags |= STARTF_USESTDHANDLES
         self.startup_info.hStdInput = h_stdin_r
 
-        return h_stdin_w
+        return h_stdin_w.value
 
     def _iter_pos(self):
         """Yield new console window's current position and dimensions.
