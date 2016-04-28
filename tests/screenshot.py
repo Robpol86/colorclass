@@ -125,7 +125,7 @@ class RunNewConsole(object):
 
     def __enter__(self):
         """Entering the `with` block. Runs the process."""
-        res = ctypes.windll.kernel32.CreateProcessA(
+        assert ctypes.windll.kernel32.CreateProcessA(
             None,  # lpApplicationName
             self.command_str,  # lpCommandLine
             None,  # lpProcessAttributes
@@ -137,7 +137,6 @@ class RunNewConsole(object):
             ctypes.byref(self.startup_info),  # lpStartupInfo
             ctypes.byref(self.process_info)  # lpProcessInformation
         )
-        assert res
 
         # Add handles added by the OS.
         self._handles.append(self.process_info.hProcess)
@@ -163,8 +162,7 @@ class RunNewConsole(object):
             status = ctypes.c_ulong(STILL_ACTIVE)
             while status.value == STILL_ACTIVE:
                 time.sleep(0.1)
-                res = ctypes.windll.kernel32.GetExitCodeProcess(self.process_info.hProcess, ctypes.byref(status))
-                assert res
+                assert ctypes.windll.kernel32.GetExitCodeProcess(self.process_info.hProcess, ctypes.byref(status))
             assert status.value == 0
         finally:
             # Close handles.
@@ -177,17 +175,15 @@ class RunNewConsole(object):
 
         # Create pipe.
         h_stdin_r, h_stdin_w = ctypes.c_ulong(), ctypes.c_ulong()
-        res = ctypes.windll.kernel32.CreatePipe(
+        assert ctypes.windll.kernel32.CreatePipe(
             ctypes.byref(h_stdin_r),
             ctypes.byref(h_stdin_w),
-            ctypes.byref(sec_attr),  # Without this stdin drops everything.
+            ctypes.byref(sec_attr),
             0,  # nSize (0 = system default).
         )
-        assert res
         self._handles.append(h_stdin_r.value)
         self._handles.append(h_stdin_w.value)
-        res = ctypes.windll.kernel32.SetHandleInformation(h_stdin_w, HANDLE_FLAG_INHERIT, 0)
-        assert res
+        assert ctypes.windll.kernel32.SetHandleInformation(h_stdin_w, HANDLE_FLAG_INHERIT, 0)
 
         # Update STARTUPINFO.
         self.startup_info.dwFlags |= STARTF_USESTDHANDLES
