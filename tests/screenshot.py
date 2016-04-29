@@ -99,21 +99,23 @@ class RunNewConsole(object):
     that STARTUPINFO.lpTitle actually works and STARTUPINFO.dwFillAttribute produce the expected result.
     """
 
-    def __init__(self, command, new_max_window=True, title=None, white_bg=False):
+    def __init__(self, command, new_max_window=True, title=None, white_bg=False, stdin=False):
         """Constructor.
 
         :param iter command: Command to run.
         :param bool new_max_window: Start process in new console window, maximized.
-        :param bool white_bg: New console window will be black text on white background.
         :param bytes title: Set new window title to this. Needed by user32.FindWindow.
+        :param bool white_bg: New console window will be black text on white background.
+        :param bool stdin: Pipe child process' stdin to caller.
         """
         if title is None:
             title = 'pytest-{0}-{1}'.format(os.getpid(), random.randint(1000, 9999)).encode('ascii')
         self.startup_info = StartupInfo(new_max_window=new_max_window, title=title, white_bg=white_bg)
         self.process_info = ProcessInfo()
         self.command_str = subprocess.list2cmdline(command).encode('ascii')
+        self.stdin = stdin
         self._handles = list()
-        self._stdin = self._setup_stdin()
+        self._stdin = self._setup_stdin() if stdin else None
 
     def __del__(self):
         """Close win32 handles."""
@@ -130,7 +132,7 @@ class RunNewConsole(object):
             self.command_str,  # lpCommandLine
             None,  # lpProcessAttributes
             None,  # lpThreadAttributes
-            True,  # bInheritHandles
+            bool(self.stdin),  # bInheritHandles
             subprocess.CREATE_NEW_CONSOLE,  # dwCreationFlags
             None,  # lpEnvironment
             str(PROJECT_ROOT).encode('ascii'),  # lpCurrentDirectory
