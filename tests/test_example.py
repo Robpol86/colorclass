@@ -81,17 +81,16 @@ def test_windows_screenshot(colors, light_bg):
 
     # Setup expected.
     if colors is False:
-        candidates = PROJECT_ROOT.join('tests').listdir('sub_sans_*.bmp')
+        candidates = [str(p) for p in PROJECT_ROOT.join('tests').listdir('sub_sans_*.bmp')]
         expected_count = 27
     elif light_bg:
-        candidates = PROJECT_ROOT.join('tests').listdir('sub_dark_fg_*.bmp')
+        candidates = [str(p) for p in PROJECT_ROOT.join('tests').listdir('sub_dark_fg_*.bmp')]
         expected_count = 2
     else:
-        candidates = PROJECT_ROOT.join('tests').listdir('sub_light_fg_*.bmp')
+        candidates = [str(p) for p in PROJECT_ROOT.join('tests').listdir('sub_light_fg_*.bmp')]
         expected_count = 2
     assert candidates
 
     # Run.
-    with RunNewConsole(command, white_bg=light_bg) as pos:
-        box = next(pos)
-        assert screenshot_until_match(str(screenshot), 15, [str(p) for p in candidates], expected_count, box)
+    with RunNewConsole(command, maximized=True, white_bg=light_bg) as gen:
+        assert screenshot_until_match(str(screenshot), 15, candidates, expected_count, gen)
