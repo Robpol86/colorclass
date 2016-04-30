@@ -47,16 +47,16 @@ class StartupInfo(ctypes.Structure):
         ('hStdError', ctypes.c_ulong),
     ]
 
-    def __init__(self, new_max_window=False, title=None, white_bg=False):
+    def __init__(self, maximize=False, title=None, white_bg=False):
         """Constructor.
 
-        :param bool new_max_window: Start process in new console window, maximized.
+        :param bool maximize: Start process in new console window, maximized.
         :param bool white_bg: New console window will be black text on white background.
         :param bytes title: Set new window title to this instead of exe path.
         """
         super(StartupInfo, self).__init__()
         self.cb = ctypes.sizeof(self)
-        if new_max_window:
+        if maximize:
             self.dwFlags |= STARTF_USESHOWWINDOW
             self.wShowWindow = SW_MAXIMIZE
         if title:
@@ -99,18 +99,18 @@ class RunNewConsole(object):
     that STARTUPINFO.lpTitle actually works and STARTUPINFO.dwFillAttribute produce the expected result.
     """
 
-    def __init__(self, command, new_max_window=True, title=None, white_bg=False, stdin=False):
+    def __init__(self, command, maximized=False, title=None, white_bg=False, stdin=False):
         """Constructor.
 
         :param iter command: Command to run.
-        :param bool new_max_window: Start process in new console window, maximized.
+        :param bool maximized: Start process in new console window, maximized.
         :param bytes title: Set new window title to this. Needed by user32.FindWindow.
         :param bool white_bg: New console window will be black text on white background.
         :param bool stdin: Pipe child process' stdin to caller.
         """
         if title is None:
             title = 'pytest-{0}-{1}'.format(os.getpid(), random.randint(1000, 9999)).encode('ascii')
-        self.startup_info = StartupInfo(new_max_window=new_max_window, title=title, white_bg=white_bg)
+        self.startup_info = StartupInfo(maximize=maximized, title=title, white_bg=white_bg)
         self.process_info = ProcessInfo()
         self.command_str = subprocess.list2cmdline(command).encode('ascii')
         self.stdin = stdin
@@ -284,7 +284,7 @@ def count_subimages(screenshot, subimg):
     return occurrences
 
 
-def screenshot_until_match(save_to, timeout, subimg_candidates, expected_count, box=None):
+def screenshot_until_match(save_to, timeout, subimg_candidates, expected_count, gen):
     """Take screenshots until one of the 'done' subimages is found. Image is saved when subimage found or at timeout.
 
     If you get ImportError run "pip install pillow". Only OSX and Windows is supported.
@@ -293,7 +293,7 @@ def screenshot_until_match(save_to, timeout, subimg_candidates, expected_count, 
     :param int timeout: Give up after these many seconds.
     :param iter subimg_candidates: Subimage paths to look for. List of strings.
     :param int expected_count: Keep trying until any of subimg_candidates is found this many times.
-    :param tuple box: Crop screen shot to this region (left, upper, right, lower).
+    :param iter gen: Generator yielding window position and size to crop screenshot to.
 
     :return: If one of the 'done' subimages was found somewhere in the screenshot.
     :rtype: bool
@@ -304,7 +304,7 @@ def screenshot_until_match(save_to, timeout, subimg_candidates, expected_count, 
 
     # Take screenshots until subimage is found.
     while True:
-        with ImageGrab.grab(box) as rgba:
+        with ImageGrab.grab(next(gen)) as rgba:
             with rgba.convert(mode='RGB') as screenshot:
                 for subimg_path in subimg_candidates:
                     with Image.open(subimg_path) as rgba_s:
