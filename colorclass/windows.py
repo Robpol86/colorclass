@@ -106,6 +106,8 @@ def get_console_info(kernel32, handle):
     https://code.google.com/p/colorama/issues/detail?id=47
     https://bitbucket.org/pytest-dev/py/src/4617fe46/py/_io/terminalwriter.py
 
+    :raise OSError: When GetConsoleScreenBufferInfo API call fails.
+
     :param ctypes.windll.kernel32 kernel32: Loaded kernel32 instance.
     :param int handle: stderr or stdout handle.
 
@@ -114,11 +116,8 @@ def get_console_info(kernel32, handle):
     """
     # Query Win32 API.
     csbi = ConsoleScreenBufferInfo()  # Populated by GetConsoleScreenBufferInfo.
-    try:
-        if not kernel32.GetConsoleScreenBufferInfo(handle, ctypes.byref(csbi)):
-            raise IOError('Unable to get console screen buffer info from win32 API.')
-    except ctypes.ArgumentError:
-        raise IOError('Unable to get console screen buffer info from win32 API.')
+    if not kernel32.GetConsoleScreenBufferInfo(handle, ctypes.byref(csbi)):
+        raise ctypes.WinError()
 
     # Parse data.
     # buffer_width = int(csbi.dwSize.X - 1)
@@ -181,7 +180,7 @@ class WindowsStream(object):
         """Return the current foreground and background colors."""
         try:
             return get_console_info(self._kernel32, self._stream_handle)
-        except IOError:
+        except OSError:
             return WINDOWS_CODES['white'], WINDOWS_CODES['black']
 
     @colors.setter
