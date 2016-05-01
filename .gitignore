@@ -66,4 +66,4 @@ target/
 # IntelliJ
 .idea/
 
-image.png
+test*.png

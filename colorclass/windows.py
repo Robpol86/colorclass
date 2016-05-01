@@ -106,6 +106,8 @@ def get_console_info(kernel32, handle):
     https://code.google.com/p/colorama/issues/detail?id=47
     https://bitbucket.org/pytest-dev/py/src/4617fe46/py/_io/terminalwriter.py
 
+    :raise OSError: When GetConsoleScreenBufferInfo API call fails.
+
     :param ctypes.windll.kernel32 kernel32: Loaded kernel32 instance.
     :param int handle: stderr or stdout handle.
 
@@ -114,11 +116,8 @@ def get_console_info(kernel32, handle):
     """
     # Query Win32 API.
     csbi = ConsoleScreenBufferInfo()  # Populated by GetConsoleScreenBufferInfo.
-    try:
-        if not kernel32.GetConsoleScreenBufferInfo(handle, ctypes.byref(csbi)):
-            raise IOError('Unable to get console screen buffer info from win32 API.')
-    except ctypes.ArgumentError:
-        raise IOError('Unable to get console screen buffer info from win32 API.')
+    if not kernel32.GetConsoleScreenBufferInfo(handle, ctypes.byref(csbi)):
+        raise ctypes.WinError()
 
     # Parse data.
     # buffer_width = int(csbi.dwSize.X - 1)
@@ -164,10 +163,6 @@ class WindowsStream(object):
         self._stream_handle = stream_handle
         self._original_stream = original_stream
         self.default_fg, self.default_bg = self.colors
-        for attr in dir(original_stream):
-            if hasattr(self, attr):
-                continue
-            setattr(self, attr, getattr(original_stream, attr))
 
     def __getattr__(self, item):
         """If an attribute/function/etc is not defined in this function, retrieve the one from the original stream.
@@ -181,7 +176,7 @@ class WindowsStream(object):
         """Return the current foreground and background colors."""
         try:
             return get_console_info(self._kernel32, self._stream_handle)
-        except IOError:
+        except OSError:
             return WINDOWS_CODES['white'], WINDOWS_CODES['black']
 
     @colors.setter
@@ -264,60 +259,73 @@ class Windows(object):
         :return: If streams restored successfully.
         :rtype: bool
         """
-        # Skip if not on Windows or not enabled.
-        if not IS_WINDOWS or not cls.is_enabled():
+        # Skip if not on Windows.
+        if not IS_WINDOWS:
             return False
 
         # Restore default colors.
-        if hasattr(sys.stderr, 'color'):
+        if hasattr(sys.stderr, '_original_stream'):
             getattr(sys, 'stderr').color = None
-        if hasattr(sys.stdout, 'color'):
+        if hasattr(sys.stdout, '_original_stream'):
             getattr(sys, 'stdout').color = None
 
         # Restore original streams.
+        changed = False
         if hasattr(sys.stderr, '_original_stream'):
+            changed = True
             sys.stderr = getattr(sys.stderr, '_original_stream')
         if hasattr(sys.stdout, '_original_stream'):
+            changed = True
             sys.stdout = getattr(sys.stdout, '_original_stream')
 
-        return True
+        return changed
 
     @staticmethod
-    def is_enabled():
-        """Return True if either stderr or stdout has colors enabled."""
-        return hasattr(sys.stderr, '_original_stream') or hasattr(sys.stdout, '_original_stream')
+    def is_enabled(both=False):
+        """Return True if either stderr or stdout has colors enabled.
+
+        :param bool both: Return True if both stderr or stdout have colors enabled.
+        """
+        if both:
+            return hasattr(sys.stderr, '_original_stream') and hasattr(sys.stdout, '_original_stream')
+        else:
+            return hasattr(sys.stderr, '_original_stream') or hasattr(sys.stdout, '_original_stream')
 
     @classmethod
-    def enable(cls, auto_colors=False, reset_atexit=False):
+    def enable(cls, auto_colors=False, reset_atexit=False, replace_streams=True):
         """Enable color text with print() or sys.stdout.write() (stderr too).
 
         :param bool auto_colors: Automatically selects dark or light colors based on current terminal's background
             color. Only works with {autored} and related tags.
         :param bool reset_atexit: Resets original colors upon Python exit (in case you forget to reset it yourself with
             a closing tag).
+        :param bool replace_streams: Replace stdout and stderr streams with WindowsStream instances that intercept ANSI
+            color codes and call win32 APIs to change the text for the next character. Note on recent versions of
+            Windows 10 (Feb 2016 I think) ANSI color support is finally built into the console, so replacing streams is
+            no longer needed.
 
         :return: If streams replaced successfully.
         :rtype: bool
         """
         if not IS_WINDOWS:
             return False  # Windows only.
-        if hasattr(sys.stderr, '_original_stream') and hasattr(sys.stdout, '_original_stream'):
-            return False  # Nothing to do.
 
-        # Overwrite stream references.
-        kernel32, stderr, stdout = init_kernel32()
-        if not hasattr(sys.stderr, '_original_stream'):
-            sys.stderr.flush()
-            sys.stderr = WindowsStream(kernel32, stderr, sys.stderr)
-        if not hasattr(sys.stdout, '_original_stream'):
-            sys.stdout.flush()
-            sys.stdout = WindowsStream(kernel32, stdout, sys.stdout)
-        if not hasattr(sys.stderr, '_original_stream') and not hasattr(sys.stdout, '_original_stream'):
-            return False  # Something failed.
+        # Reuse/get values from init_kernel32().
+        kernel32, stderr, stdout = None, None, None
+        if hasattr(sys.stderr, '_original_stream'):
+            kernel32 = getattr(sys.stderr, '_kernel32')
+            stderr = getattr(sys.stderr, '_stream_handle')
+        if hasattr(sys.stdout, '_original_stream'):
+            kernel32 = getattr(sys.stdout, '_kernel32')
+            stdout = getattr(sys.stdout, '_stream_handle')
+        if not all((kernel32, stderr, stdout)):
+            kernel32, stderr, stdout = init_kernel32()
 
-        # Automatically select which colors to display.
-        bg_color = getattr(sys.stdout, 'default_bg', getattr(sys.stderr, 'default_bg', None))
-        if auto_colors and bg_color is not None:
+        # Set auto colors:
+        if auto_colors:
+            bg_color = getattr(sys.stdout, 'default_bg', getattr(sys.stderr, 'default_bg', None))
+            if bg_color is None:
+                bg_color = WindowsStream(kernel32, stderr, sys.stderr).default_bg
             if bg_color in (112, 96, 240, 176, 224, 208, 160):
                 ANSICodeMapping.set_light_background()
             else:
@@ -327,15 +335,31 @@ class Windows(object):
         if reset_atexit:
             atexit.register(cls.disable)
 
-        return True
+        # Stop if requested.
+        if not replace_streams:
+            return False
 
-    def __init__(self, auto_colors=False):
+        # Overwrite stream references.
+        changed = False
+        if not hasattr(sys.stderr, '_original_stream'):
+            changed = True
+            sys.stderr.flush()
+            sys.stderr = WindowsStream(kernel32, stderr, sys.stderr)
+        if not hasattr(sys.stdout, '_original_stream'):
+            changed = True
+            sys.stdout.flush()
+            sys.stdout = WindowsStream(kernel32, stdout, sys.stdout)
+
+        return changed
+
+    def __init__(self, auto_colors=False, replace_streams=True):
         """Constructor."""
         self.auto_colors = auto_colors
+        self.replace_streams = replace_streams
 
     def __enter__(self):
         """Context manager, enables colors on Windows."""
-        self.enable(auto_colors=self.auto_colors)
+        self.enable(auto_colors=self.auto_colors, replace_streams=self.replace_streams)
 
     def __exit__(self, *_):
         """Context manager, disabled colors on Windows."""
