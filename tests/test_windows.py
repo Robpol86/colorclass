@@ -3,7 +3,6 @@
 from __future__ import print_function
 
 import ctypes
-import sys
 
 try:
     from StringIO import StringIO
@@ -12,6 +11,7 @@ except ImportError:
 
 import pytest
 
+from colorclass.codes import ANSICodeMapping
 from colorclass.color import Color
 from colorclass.windows import (
     ConsoleScreenBufferInfo, get_console_info, init_kernel32, IS_WINDOWS, Windows, WINDOWS_CODES, WindowsStream
@@ -90,7 +90,7 @@ def test_get_console_info():
 
 
 def test_windows_stream():
-    """Test WindowsStream."""
+    """Test WindowsStream class."""
     # Test error.
     stream = WindowsStream(init_kernel32()[0], 0, StringIO())
     assert stream.colors == (WINDOWS_CODES['white'], WINDOWS_CODES['black'])
@@ -125,42 +125,58 @@ def test_windows_stream():
     assert stream.colors == (WINDOWS_CODES['red'], WINDOWS_CODES['bgblue'])
 
 
-def test_disable_safe():
-    """Test for safety."""
-    original_stderr_id, original_stdout_id = id(sys.stderr), id(sys.stdout)
+def test_windows(monkeypatch, tmpdir):
+    """Test Windows class.
 
-    assert not Windows.is_enabled()
+    :param monkeypatch: pytest fixture.
+    :param tmpdir: pytest fixture.
+    """
+    init_k32, atexit = list(), list()
+    kernel32 = MockKernel32()
+    monkeypatch.setattr('colorclass.windows.init_kernel32', lambda: (init_k32.append(True) or (kernel32, 1, 2)))
+    monkeypatch.setattr(ANSICodeMapping, 'LIGHT_BACKGROUND', None)
+    monkeypatch.setattr('atexit.register', lambda f: atexit.append(f))
+
+    # Test without auto_colors.
+    assert not Windows.enable(reset_atexit=True, replace_streams=False)
+    assert init_k32.pop() and not init_k32  # assert called.
+    assert ANSICodeMapping.LIGHT_BACKGROUND is None
+    assert atexit.pop() and not atexit  # assert called.
+    assert not Windows.is_enabled()  # assert streams not replaced.
+    assert not Windows.disable()
     assert not Windows.disable()
 
+    # Test auto_colors.
+    assert not Windows.enable(auto_colors=True, replace_streams=False)
+    assert init_k32.pop() and not init_k32
+    assert ANSICodeMapping.LIGHT_BACKGROUND is False
+    assert not atexit
     assert not Windows.is_enabled()
-    assert not Windows.disable()
-
+    kernel32.wAttributes = 240
+    assert not Windows.enable(auto_colors=True, replace_streams=False)
+    assert init_k32.pop() and not init_k32
+    assert ANSICodeMapping.LIGHT_BACKGROUND is True
     assert not Windows.is_enabled()
-    assert not Windows.disable()
 
-    assert original_stderr_id == id(sys.stderr)
-    assert original_stdout_id == id(sys.stdout)
-
-
-def test_enable_then_disable():
-    """Test enabling then disabling on Windows."""
-    original_stderr_id, original_stdout_id = id(sys.stderr), id(sys.stdout)
-
-    assert not Windows.is_enabled()
+    # Test replace streams.
+    stderr, stdout = tmpdir.join('stderr').open(mode='wb'), tmpdir.join('stdout').open(mode='wb')
+    mock_sys = type('mock_sys', (), dict(stderr=stderr, stdout=stdout))
+    monkeypatch.setattr('colorclass.windows.sys', mock_sys)
     assert Windows.enable()
-    assert original_stderr_id != id(sys.stderr)
-    assert original_stdout_id != id(sys.stdout)
+    assert init_k32.pop() and not init_k32
+    assert Windows.is_enabled()
+    assert Windows.is_enabled(True)
+    assert not Windows.enable()  # Already enabled.
+    assert not init_k32
+    assert Windows.is_enabled()
 
+    # Disable.
     assert Windows.disable()
-    assert original_stderr_id == id(sys.stderr)
-    # assert original_stdout_id == id(sys.stdout)  # pytest does some weird shit.
+    assert not Windows.is_enabled()
+    assert not Windows.disable()
+    assert not Windows.is_enabled()
 
-
-def test():
-    """Basic test."""
-    with Windows(auto_colors=True):
-        print(Color('{autored}Test{/autored}.'))
-        sys.stdout.flush()
-
-    Windows.enable(reset_atexit=True)
-    print(Color('{autored}{autobgyellow}Test{bgblack}2{/bg}.{/all}'))
+    # Test context manager.
+    with Windows():
+        assert Windows.is_enabled()
+    assert not Windows.is_enabled()
