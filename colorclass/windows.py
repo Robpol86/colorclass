@@ -163,10 +163,6 @@ class WindowsStream(object):
         self._stream_handle = stream_handle
         self._original_stream = original_stream
         self.default_fg, self.default_bg = self.colors
-        for attr in dir(original_stream):
-            if hasattr(self, attr):
-                continue
-            setattr(self, attr, getattr(original_stream, attr))
 
     def __getattr__(self, item):
         """If an attribute/function/etc is not defined in this function, retrieve the one from the original stream.
