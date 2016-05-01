@@ -3,6 +3,8 @@
 from __future__ import print_function
 
 import ctypes
+import sys
+from textwrap import dedent
 
 try:
     from StringIO import StringIO
@@ -16,8 +18,8 @@ from colorclass.color import Color
 from colorclass.windows import (
     ConsoleScreenBufferInfo, get_console_info, init_kernel32, IS_WINDOWS, Windows, WINDOWS_CODES, WindowsStream
 )
-
-pytestmark = pytest.mark.skipif(not IS_WINDOWS, reason='Requires windows.')
+from tests.conftest import PROJECT_ROOT
+from tests.screenshot import RunNewConsole, screenshot_until_match
 
 
 class MockKernel32(object):
@@ -48,6 +50,7 @@ class MockKernel32(object):
         return 1
 
 
+@pytest.mark.skipif(str(not IS_WINDOWS))
 def test_init_kernel32():
     """Test init_kernel32(). Make sure it doesn't override other LibraryLoaders."""
     k32_a = ctypes.LibraryLoader(ctypes.WinDLL).kernel32
@@ -77,6 +80,7 @@ def test_init_kernel32():
     assert stdout_b == stdout_d
 
 
+@pytest.mark.skipif(str(not IS_WINDOWS))
 def test_get_console_info():
     """Test get_console_info()."""
     # Test error.
@@ -89,6 +93,7 @@ def test_get_console_info():
     assert bg_color == 0
 
 
+@pytest.mark.skipif(str(not IS_WINDOWS))
 def test_windows_stream():
     """Test WindowsStream class."""
     # Test error.
@@ -124,7 +129,16 @@ def test_windows_stream():
     assert original_stream.read() == 'ABC'
     assert stream.colors == (WINDOWS_CODES['red'], WINDOWS_CODES['bgblue'])
 
+    # Test ignore invalid code.
+    original_stream.seek(0)
+    original_stream.truncate()
+    stream.write('\x1b[0mA\x1b[31mB\x1b[44;999mC')
+    original_stream.seek(0)
+    assert original_stream.read() == 'ABC'
+    assert stream.colors == (WINDOWS_CODES['red'], WINDOWS_CODES['bgblue'])
 
+
+@pytest.mark.skipif(str(not IS_WINDOWS))
 def test_windows(monkeypatch, tmpdir):
     """Test Windows class.
 
@@ -166,7 +180,7 @@ def test_windows(monkeypatch, tmpdir):
     assert init_k32.pop() and not init_k32
     assert Windows.is_enabled()
     assert Windows.is_enabled(True)
-    assert not Windows.enable()  # Already enabled.
+    assert not Windows.enable(auto_colors=True)  # Already enabled. Using auto_colors to test bg_color from existing.
     assert not init_k32
     assert Windows.is_enabled()
 
@@ -180,3 +194,52 @@ def test_windows(monkeypatch, tmpdir):
     with Windows():
         assert Windows.is_enabled()
     assert not Windows.is_enabled()
+
+
+@pytest.mark.skipif(str(IS_WINDOWS))
+def test_windows_nix():
+    """Test enable/disable on non-Windows platforms."""
+    with Windows():
+        assert not Windows.is_enabled()
+    assert not Windows.is_enabled()
+
+
+@pytest.mark.skipif(str(not IS_WINDOWS))
+def test_enable_disable(tmpdir):
+    """Test enabling, disabling, repeat. Make sure colors still work.
+
+    :param tmpdir: pytest fixture.
+    """
+    screenshot = PROJECT_ROOT.join('test_windows.png')
+    if screenshot.check():
+        screenshot.remove()
+    script = tmpdir.join('script.py')
+    command = [sys.executable, str(script)]
+
+    script.write(dedent("""\
+    from __future__ import print_function
+    import os, time
+    from colorclass import Color, Windows
+
+    with Windows(auto_colors=True):
+        print(Color('{autored}Red{/autored}'))
+    print('Red')
+    with Windows(auto_colors=True):
+        print(Color('{autored}Red{/autored}'))
+    print('Red')
+
+    stop_after = time.time() + 20
+    while not os.path.exists(r'%s') and time.time() < stop_after:
+        time.sleep(0.5)
+    """) % str(screenshot))
+
+    # Setup expected.
+    with_colors = [str(p) for p in PROJECT_ROOT.join('tests').listdir('sub_light_fg_*.bmp')]
+    sans_colors = [str(p) for p in PROJECT_ROOT.join('tests').listdir('sub_sans_*.bmp')]
+    assert with_colors
+    assert sans_colors
+
+    # Run.
+    with RunNewConsole(command) as gen:
+        assert screenshot_until_match(str(screenshot), 15, with_colors, 2, gen)
+        assert screenshot_until_match(str(screenshot), 15, sans_colors, 2, gen)

@@ -259,8 +259,8 @@ class Windows(object):
         :return: If streams restored successfully.
         :rtype: bool
         """
-        # Skip if not on Windows or not enabled.
-        if not IS_WINDOWS or not cls.is_enabled():
+        # Skip if not on Windows.
+        if not IS_WINDOWS:
             return False
 
         # Restore default colors.
@@ -270,12 +270,15 @@ class Windows(object):
             getattr(sys, 'stdout').color = None
 
         # Restore original streams.
+        changed = False
         if hasattr(sys.stderr, '_original_stream'):
+            changed = True
             sys.stderr = getattr(sys.stderr, '_original_stream')
         if hasattr(sys.stdout, '_original_stream'):
+            changed = True
             sys.stdout = getattr(sys.stdout, '_original_stream')
 
-        return True
+        return changed
 
     @staticmethod
     def is_enabled(both=False):
@@ -332,19 +335,22 @@ class Windows(object):
         if reset_atexit:
             atexit.register(cls.disable)
 
-        # Stop if enable not needed.
-        if not replace_streams or cls.is_enabled(True):
+        # Stop if requested.
+        if not replace_streams:
             return False
 
         # Overwrite stream references.
+        changed = False
         if not hasattr(sys.stderr, '_original_stream'):
+            changed = True
             sys.stderr.flush()
             sys.stderr = WindowsStream(kernel32, stderr, sys.stderr)
         if not hasattr(sys.stdout, '_original_stream'):
+            changed = True
             sys.stdout.flush()
             sys.stdout = WindowsStream(kernel32, stdout, sys.stdout)
 
-        return cls.is_enabled(True)
+        return changed
 
     def __init__(self, auto_colors=False, replace_streams=True):
         """Constructor."""

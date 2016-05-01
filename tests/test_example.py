@@ -68,7 +68,7 @@ def test_windows_screenshot(colors, light_bg):
     :param bool colors: Enable, disable, or omit color arguments (default has colors).
     :param bool light_bg: Create console with white background color.
     """
-    screenshot = PROJECT_ROOT.join('image.png')
+    screenshot = PROJECT_ROOT.join('test_example.png')
     if screenshot.check():
         screenshot.remove()
     command = [sys.executable, str(PROJECT_ROOT.join('example.py')), 'print', '-w', str(screenshot)]
