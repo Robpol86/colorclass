@@ -8,6 +8,8 @@ class Color(ColorStr):
 
     Example syntax: Color('{red}Sample Text{/red}')
 
+    Example without parsing logic: Color('{red}Sample Text{/red}', keep_tags=True)
+
     For a list of codes, call: colorclass.list_tags()
     """
 

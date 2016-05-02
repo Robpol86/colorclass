@@ -53,9 +53,11 @@ class ColorStr(PARENT_CLASS):
 
     def __new__(cls, *args, **kwargs):
         """Parse color markup and instantiate."""
+        keep_tags = kwargs.pop('keep_tags', False)
+
         # Parse string.
         value_markup = args[0] if args else PARENT_CLASS()  # e.g. '{red}test{/red}'
-        value_colors, value_no_colors = parse_input(value_markup, ANSICodeMapping.DISABLE_COLORS)
+        value_colors, value_no_colors = parse_input(value_markup, ANSICodeMapping.DISABLE_COLORS, keep_tags)
         color_index = build_color_index(value_colors)
 
         # Instantiate.

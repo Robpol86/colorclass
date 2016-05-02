@@ -5,7 +5,7 @@ from functools import partial
 
 import pytest
 
-from colorclass.core import apply_text
+from colorclass.core import apply_text, ColorStr
 from tests.conftest import assert_both_values, get_instance
 
 
@@ -367,3 +367,18 @@ def test_empty(kind):
     assert_both(instance.upper(), '', '\033[39m')
     assert_both(instance.zfill(0), '', '')
     assert_both(instance.zfill(1), '0', '0')
+
+
+def test_keep_tags():
+    """Test keep_tags keyword arg."""
+    assert_both = partial(assert_both_values, kind='ColorStr color')
+
+    instance = ColorStr('{red}Test{/red}', keep_tags=True)
+    assert_both(instance, '{red}Test{/red}', '{red}Test{/red}')
+    assert_both(instance.upper(), '{RED}TEST{/RED}', '{RED}TEST{/RED}')
+    assert len(instance) == 15
+
+    instance = ColorStr('{red}\033[41mTest\033[49m{/red}', keep_tags=True)
+    assert_both(instance, '{red}Test{/red}', '{red}\033[41mTest\033[49m{/red}')
+    assert_both(instance.upper(), '{RED}TEST{/RED}', '{RED}\033[41mTEST\033[49m{/RED}')
+    assert len(instance) == 15

@@ -141,6 +141,7 @@ Unreleased
 
 Added
     * Option to not replace stdout/stderr streams in the Windows class. Latest Windows 10 natively supports ANSI colors.
+    * ``keep_tags`` boolean keyword argument to Color(). Prevents colorclass from parsing curly brackets.
 
 Changed
     * Refactored most of windows.py.

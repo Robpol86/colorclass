@@ -46,13 +46,14 @@ def prune_overridden(ansi_string):
     return ansi_string
 
 
-def parse_input(tagged_string, disable_colors):
+def parse_input(tagged_string, disable_colors, keep_tags):
     """Perform the actual conversion of tags to ANSI escaped codes.
 
     Provides a version of the input without any colors for len() and other methods.
 
     :param str tagged_string: The input unicode value.
     :param bool disable_colors: Strip all colors in both outputs.
+    :param bool keep_tags: Skip parsing curly bracket tags into ANSI escape sequences.
 
     :return: 2-item tuple. First item is the parsed output. Second item is a version of the input without any colors.
     :rtype: tuple
@@ -61,8 +62,9 @@ def parse_input(tagged_string, disable_colors):
     output_colors = getattr(tagged_string, 'value_colors', tagged_string)
 
     # Convert: '{b}{red}' -> '\033[1m\033[31m'
-    for tag, replacement in (('{' + k + '}', '' if v is None else '\033[%dm' % v) for k, v in codes.items()):
-        output_colors = output_colors.replace(tag, replacement)
+    if not keep_tags:
+        for tag, replacement in (('{' + k + '}', '' if v is None else '\033[%dm' % v) for k, v in codes.items()):
+            output_colors = output_colors.replace(tag, replacement)
 
     # Strip colors.
     output_no_colors = RE_ANSI.sub('', output_colors)

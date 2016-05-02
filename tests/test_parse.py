@@ -48,7 +48,30 @@ def test_parse_input(disable, in_, expected_colors, expected_no_colors):
     :param str expected_colors: Expected first item of return value.
     :param str expected_no_colors: Expected second item of return value.
     """
-    actual_colors, actual_no_colors = parse_input(in_, disable)
+    actual_colors, actual_no_colors = parse_input(in_, disable, False)
+    if disable:
+        assert actual_colors == expected_no_colors
+    else:
+        assert actual_colors == expected_colors
+    assert actual_no_colors == expected_no_colors
+
+
+@pytest.mark.parametrize('disable', [True, False])
+@pytest.mark.parametrize('in_,expected_colors,expected_no_colors', [
+    ('', '', ''),
+    ('test', 'test', 'test'),
+    ('{b}TEST{/b}', '{b}TEST{/b}', '{b}TEST{/b}'),
+    ('D {/all}{i}\033[31;103mE {/all}', 'D {/all}{i}\033[31;103mE {/all}', 'D {/all}{i}E {/all}'),
+])
+def test_parse_input_keep_tags(disable, in_, expected_colors, expected_no_colors):
+    """Test function with keep_tags=True.
+
+    :param bool disable: Disable colors?
+    :param str in_: Input string to pass to function.
+    :param str expected_colors: Expected first item of return value.
+    :param str expected_no_colors: Expected second item of return value.
+    """
+    actual_colors, actual_no_colors = parse_input(in_, disable, True)
     if disable:
         assert actual_colors == expected_no_colors
     else:
