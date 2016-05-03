@@ -73,7 +73,7 @@ class ColorStr(PARENT_CLASS):
 
     def __add__(self, other):
         """Concatenate."""
-        return self.__class__(self.value_colors + other)
+        return self.__class__(self.value_colors + other, keep_tags=True)
 
     def __getitem__(self, item):
         """Retrieve character."""
@@ -81,7 +81,7 @@ class ColorStr(PARENT_CLASS):
             color_pos = self.color_index[int(item)]
         except TypeError:  # slice
             return super(ColorStr, self).__getitem__(item)
-        return self.__class__(find_char_color(self.value_colors, color_pos))
+        return self.__class__(find_char_color(self.value_colors, color_pos), keep_tags=True)
 
     def __iter__(self):
         """Yield one color-coded character at a time."""
@@ -94,11 +94,11 @@ class ColorStr(PARENT_CLASS):
 
     def __mod__(self, other):
         """String substitution (like printf)."""
-        return self.__class__(self.value_colors % other)
+        return self.__class__(self.value_colors % other, keep_tags=True)
 
     def __mul__(self, other):
         """Multiply string."""
-        return self.__class__(self.value_colors * other)
+        return self.__class__(self.value_colors * other, keep_tags=True)
 
     def __repr__(self):
         """Representation of a class instance (like datetime.datetime.now())."""
@@ -118,7 +118,7 @@ class ColorStr(PARENT_CLASS):
             result = self.value_no_colors.center(width, fillchar)
         else:
             result = self.value_no_colors.center(width)
-        return self.__class__(result.replace(self.value_no_colors, self.value_colors))
+        return self.__class__(result.replace(self.value_no_colors, self.value_colors), keep_tags=True)
 
     def count(self, sub, start=0, end=-1):
         """Return the number of non-overlapping occurrences of substring sub in string[start:end].
@@ -166,7 +166,7 @@ class ColorStr(PARENT_CLASS):
         :param str encoding: Codec.
         :param str errors: Error handling scheme.
         """
-        return self.__class__(super(ColorStr, self).decode(encoding, errors))
+        return self.__class__(super(ColorStr, self).decode(encoding, errors), keep_tags=True)
 
     def find(self, sub, start=None, end=None):
         """Return the lowest index where substring sub is found, such that sub is contained within string[start:end].
@@ -236,7 +236,7 @@ class ColorStr(PARENT_CLASS):
 
         :param iterable: Join items in this iterable.
         """
-        return self.__class__(super(ColorStr, self).join(iterable))
+        return self.__class__(super(ColorStr, self).join(iterable), keep_tags=True)
 
     def ljust(self, width, fillchar=None):
         """Return left-justified string of length width. Padding is done using the specified fill character or space.
@@ -248,7 +248,7 @@ class ColorStr(PARENT_CLASS):
             result = self.value_no_colors.ljust(width, fillchar)
         else:
             result = self.value_no_colors.ljust(width)
-        return self.__class__(result.replace(self.value_no_colors, self.value_colors))
+        return self.__class__(result.replace(self.value_no_colors, self.value_colors), keep_tags=True)
 
     def rfind(self, sub, start=None, end=None):
         """Return the highest index where substring sub is found, such that sub is contained within string[start:end].
@@ -280,7 +280,7 @@ class ColorStr(PARENT_CLASS):
             result = self.value_no_colors.rjust(width, fillchar)
         else:
             result = self.value_no_colors.rjust(width)
-        return self.__class__(result.replace(self.value_no_colors, self.value_colors))
+        return self.__class__(result.replace(self.value_no_colors, self.value_colors), keep_tags=True)
 
     def splitlines(self, keepends=False):
         """Return a list of the lines in the string, breaking at line boundaries.
@@ -336,5 +336,7 @@ class ColorStr(PARENT_CLASS):
         :param int width: Length of output string.
         """
         if not self.value_no_colors:
-            return self.__class__(self.value_no_colors.zfill(width))
-        return self.__class__(self.value_colors.replace(self.value_no_colors, self.value_no_colors.zfill(width)))
+            result = self.value_no_colors.zfill(width)
+        else:
+            result = self.value_colors.replace(self.value_no_colors, self.value_no_colors.zfill(width))
+        return self.__class__(result, keep_tags=True)
