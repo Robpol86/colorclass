@@ -184,7 +184,7 @@ class ColorStr(PARENT_CLASS):
 
         The substitutions are identified by braces ('{' and '}').
         """
-        return self.__class__(super(ColorStr, self).format(*args, **kwargs))
+        return self.__class__(super(ColorStr, self).format(*args, **kwargs), keep_tags=True)
 
     def index(self, sub, start=None, end=None):
         """Like S.find() but raise ValueError when the substring is not found.

@@ -142,6 +142,20 @@ def test_format(kind, mode):
 
 
 @pytest.mark.parametrize('kind', ['str', 'ColorStr plain', 'ColorStr color'])
+def test_format_mixed(kind):
+    """Test format method with https://github.com/Robpol86/colorclass/issues/16 in mind.
+
+    :param str kind: Type of string to test.
+    """
+    instance = get_instance(kind, 'XXX: ') + '{0}'
+    assert_both = partial(assert_both_values, kind=kind)
+
+    assert_both(instance, 'XXX: {0}', '\033[31mXXX: \033[39m{0}')
+    assert_both(instance.format('{blue}Moo{/blue}'), 'XXX: {blue}Moo{/blue}', '\033[31mXXX: \033[39m{blue}Moo{/blue}')
+    assert_both(instance.format(get_instance(kind, 'Moo', 'blue')), 'XXX: Moo', '\033[31mXXX: \033[34mMoo\033[39m')
+
+
+@pytest.mark.parametrize('kind', ['str', 'ColorStr plain', 'ColorStr color'])
 def test_c_f(kind):
     """Test C through F methods.
 

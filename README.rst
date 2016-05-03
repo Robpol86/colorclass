@@ -146,6 +146,9 @@ Added
 Changed
     * Refactored most of windows.py.
 
+Fixed
+    * https://github.com/Robpol86/colorclass/issues/16
+
 2.0.0 - 2016-04-10
 ------------------
 
