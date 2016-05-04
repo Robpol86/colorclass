@@ -21,6 +21,8 @@ from colorclass.windows import (
 from tests.conftest import PROJECT_ROOT
 from tests.screenshot import RunNewConsole, screenshot_until_match
 
+INVALID_HANDLE_VALUE = -1
+
 
 class MockKernel32(object):
     """Mock kernel32."""
@@ -80,31 +82,31 @@ def test_init_kernel32():
     assert stdout_b == stdout_d
 
 
-@pytest.mark.skipif(str(not IS_WINDOWS))
 def test_get_console_info():
     """Test get_console_info()."""
     # Test error.
-    with pytest.raises(OSError):
-        get_console_info(init_kernel32()[0], 0)
+    if IS_WINDOWS:
+        with pytest.raises(OSError):
+            get_console_info(init_kernel32()[0], INVALID_HANDLE_VALUE)
 
-    # Test no error with mock GetConsoleScreenBufferInfo. Console unavailable when pytest running.
-    fg_color, bg_color = get_console_info(MockKernel32(), 0)
+    # Test no error with mock GetConsoleScreenBufferInfo.
+    fg_color, bg_color = get_console_info(MockKernel32(), INVALID_HANDLE_VALUE)
     assert fg_color == 7
     assert bg_color == 0
 
 
-@pytest.mark.skipif(str(not IS_WINDOWS))
 def test_windows_stream():
     """Test WindowsStream class."""
     # Test error.
-    stream = WindowsStream(init_kernel32()[0], 0, StringIO())
-    assert stream.colors == (WINDOWS_CODES['white'], WINDOWS_CODES['black'])
-    stream.colors = WINDOWS_CODES['red'] | WINDOWS_CODES['bgblue']  # No exception, just ignore.
-    assert stream.colors == (WINDOWS_CODES['white'], WINDOWS_CODES['black'])
+    if IS_WINDOWS:
+        stream = WindowsStream(init_kernel32()[0], INVALID_HANDLE_VALUE, StringIO())
+        assert stream.colors == (WINDOWS_CODES['white'], WINDOWS_CODES['black'])
+        stream.colors = WINDOWS_CODES['red'] | WINDOWS_CODES['bgblue']  # No exception, just ignore.
+        assert stream.colors == (WINDOWS_CODES['white'], WINDOWS_CODES['black'])
 
     # Test __getattr__() and color resetting.
     original_stream = StringIO()
-    stream = WindowsStream(MockKernel32(), 0, original_stream)
+    stream = WindowsStream(MockKernel32(), INVALID_HANDLE_VALUE, original_stream)
     assert stream.writelines == original_stream.writelines  # Test __getattr__().
     assert stream.colors == (WINDOWS_CODES['white'], WINDOWS_CODES['black'])
     stream.colors = WINDOWS_CODES['red'] | WINDOWS_CODES['bgblue']
@@ -201,7 +203,11 @@ def test_windows_nix():
     """Test enable/disable on non-Windows platforms."""
     with Windows():
         assert not Windows.is_enabled()
+        assert not hasattr(sys.stderr, '_original_stream')
+        assert not hasattr(sys.stdout, '_original_stream')
     assert not Windows.is_enabled()
+    assert not hasattr(sys.stderr, '_original_stream')
+    assert not hasattr(sys.stdout, '_original_stream')
 
 
 @pytest.mark.skipif(str(not IS_WINDOWS))
