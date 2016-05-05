@@ -8,6 +8,7 @@ import sys
 from colorclass.codes import ANSICodeMapping, BASE_CODES
 from colorclass.core import RE_SPLIT
 
+INVALID_HANDLE_VALUE = -1
 IS_WINDOWS = sys.platform == 'win32'
 RE_NUMBER_SEARCH = re.compile(r'\033\[([\d;]+)m')
 STD_ERROR_HANDLE = -12
@@ -67,36 +68,51 @@ class ConsoleScreenBufferInfo(ctypes.Structure):
     ]
 
 
-def init_kernel32():
+def init_kernel32(kernel32=None):
     """Load a unique instance of WinDLL into memory, set arg/return types, and get stdout/err handles.
-
-    :raise AttributeError: When called on a non-Windows platform.
 
     1. Since we are setting DLL function argument types and return types, we need to maintain our own instance of
        kernel32 to prevent overriding (or being overwritten by) user's own changes to ctypes.windll.kernel32.
     2. While we're doing all this we might as well get the handles to STDOUT and STDERR streams.
+    3. If either stream has already been replaced set return value to INVALID_HANDLE_VALUE to indicate it shouldn't be
+       replaced.
 
-    :return: Loaded kernel32 instance, stderr handle (int), and stdout handle (int).
+    :raise AttributeError: When called on a non-Windows platform.
+
+    :param kernel32: Optional mock kernel32 object. For testing.
+
+    :return: Loaded kernel32 instance, stderr handle (int), stdout handle (int), a valid handle to replace.
     :rtype: tuple
     """
-    kernel32 = ctypes.LibraryLoader(ctypes.WinDLL).kernel32  # Load our own instance. Unique memory address.
-
-    # Setup GetStdHandle.
-    kernel32.GetStdHandle.argtypes = [ctypes.c_ulong]
-    kernel32.GetStdHandle.restype = ctypes.c_void_p
-
-    # Setup GetConsoleScreenBufferInfo.
-    kernel32.GetConsoleScreenBufferInfo.argtypes = [
-        ctypes.c_void_p,
-        ctypes.POINTER(ConsoleScreenBufferInfo),
-    ]
-    kernel32.GetConsoleScreenBufferInfo.restype = ctypes.c_long
+    if not kernel32:
+        kernel32 = ctypes.LibraryLoader(ctypes.WinDLL).kernel32  # Load our own instance. Unique memory address.
+        kernel32.GetStdHandle.argtypes = [ctypes.c_ulong]
+        kernel32.GetStdHandle.restype = ctypes.c_void_p
+        kernel32.GetConsoleScreenBufferInfo.argtypes = [
+            ctypes.c_void_p,
+            ctypes.POINTER(ConsoleScreenBufferInfo),
+        ]
+        kernel32.GetConsoleScreenBufferInfo.restype = ctypes.c_long
 
     # Get handles.
-    stderr = kernel32.GetStdHandle(STD_ERROR_HANDLE)
-    stdout = kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
+    if hasattr(sys.stderr, '_original_stream'):
+        stderr = INVALID_HANDLE_VALUE
+    else:
+        stderr = kernel32.GetStdHandle(STD_ERROR_HANDLE)
+    if hasattr(sys.stdout, '_original_stream'):
+        stdout = INVALID_HANDLE_VALUE
+    else:
+        stdout = kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
 
-    return kernel32, stderr, stdout
+    # Select either stderr or stdout, whichever is valid.
+    if stderr != INVALID_HANDLE_VALUE:
+        valid_handle = stderr
+    elif stdout != INVALID_HANDLE_VALUE:
+        valid_handle = stdout
+    else:
+        valid_handle = None
+
+    return kernel32, stderr, stdout, valid_handle
 
 
 def get_console_info(kernel32, handle):
@@ -319,7 +335,7 @@ class Windows(object):
             kernel32 = getattr(sys.stdout, '_kernel32')
             stdout = getattr(sys.stdout, '_stream_handle')
         if not all((kernel32, stderr, stdout)):
-            kernel32, stderr, stdout = init_kernel32()
+            kernel32, stderr, stdout, _ = init_kernel32()
 
         # Set auto colors:
         if auto_colors:

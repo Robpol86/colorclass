@@ -16,19 +16,20 @@ import pytest
 from colorclass.codes import ANSICodeMapping
 from colorclass.color import Color
 from colorclass.windows import (
-    ConsoleScreenBufferInfo, get_console_info, init_kernel32, IS_WINDOWS, Windows, WINDOWS_CODES, WindowsStream
+    ConsoleScreenBufferInfo, get_console_info, init_kernel32, INVALID_HANDLE_VALUE, IS_WINDOWS,
+    STD_ERROR_HANDLE, Windows, WINDOWS_CODES, WindowsStream,
 )
 from tests.conftest import PROJECT_ROOT
 from tests.screenshot import RunNewConsole, screenshot_until_match
-
-INVALID_HANDLE_VALUE = -1
 
 
 class MockKernel32(object):
     """Mock kernel32."""
 
-    def __init__(self):
+    def __init__(self, stderr=INVALID_HANDLE_VALUE, stdout=INVALID_HANDLE_VALUE):
         """Constructor."""
+        self.stderr = stderr
+        self.stdout = stdout
         self.wAttributes = 7
 
     def GetConsoleScreenBufferInfo(self, _, csbi_pointer):  # noqa
@@ -42,6 +43,13 @@ class MockKernel32(object):
         csbi.wAttributes = self.wAttributes
         return 1
 
+    def GetStdHandle(self, handle):  # noqa
+        """Mock GetStdHandle.
+
+        :param int handle: STD_ERROR_HANDLE or STD_OUTPUT_HANDLE.
+        """
+        return self.stderr if handle == STD_ERROR_HANDLE else self.stdout
+
     def SetConsoleTextAttribute(self, _, color_code):  # noqa
         """Mock SetConsoleTextAttribute.
 
@@ -52,20 +60,29 @@ class MockKernel32(object):
         return 1
 
 
+class MockSys(object):
+    """Mock sys standard library module."""
+
+    def __init__(self, stderr=None, stdout=None):
+        """Constructor."""
+        self.stderr = stderr or type('', (), {})
+        self.stdout = stdout or type('', (), {})
+
+
 @pytest.mark.skipif(str(not IS_WINDOWS))
-def test_init_kernel32():
-    """Test init_kernel32(). Make sure it doesn't override other LibraryLoaders."""
+def test_init_kernel32_unique():
+    """Make sure function doesn't override other LibraryLoaders."""
     k32_a = ctypes.LibraryLoader(ctypes.WinDLL).kernel32
     k32_a.GetStdHandle.argtypes = [ctypes.c_void_p]
     k32_a.GetStdHandle.restype = ctypes.c_ulong
 
-    k32_b, stderr_b, stdout_b = init_kernel32()
+    k32_b, stderr_b, stdout_b = init_kernel32()[:3]
 
     k32_c = ctypes.LibraryLoader(ctypes.WinDLL).kernel32
     k32_c.GetStdHandle.argtypes = [ctypes.c_long]
     k32_c.GetStdHandle.restype = ctypes.c_short
 
-    k32_d, stderr_d, stdout_d = init_kernel32()
+    k32_d, stderr_d, stdout_d = init_kernel32()[:3]
 
     # Verify external.
     assert k32_a.GetStdHandle.argtypes == [ctypes.c_void_p]
@@ -82,8 +99,44 @@ def test_init_kernel32():
     assert stdout_b == stdout_d
 
 
+@pytest.mark.parametrize('stderr_invalid', [False, True])
+@pytest.mark.parametrize('stdout_invalid', [False, True])
+def test_init_kernel32_valid_handle(monkeypatch, stderr_invalid, stdout_invalid):
+    """Test valid/invalid handle handling.
+
+    :param monkeypatch: pytest fixture.
+    :param bool stderr_invalid: Mock stderr is valid.
+    :param bool stdout_invalid: Mock stdout is valid.
+    """
+    mock_sys = MockSys()
+    monkeypatch.setattr('colorclass.windows.sys', mock_sys)
+    if stderr_invalid:
+        setattr(mock_sys.stderr, '_original_stream', True)
+    if stdout_invalid:
+        setattr(mock_sys.stdout, '_original_stream', True)
+
+    stderr, stdout, valid_handle = init_kernel32(MockKernel32(stderr=100, stdout=200))[1:]
+
+    if stderr_invalid and stdout_invalid:
+        assert stderr == INVALID_HANDLE_VALUE
+        assert stdout == INVALID_HANDLE_VALUE
+        assert valid_handle is None
+    elif stdout_invalid:
+        assert stderr == 100
+        assert stdout == INVALID_HANDLE_VALUE
+        assert valid_handle == stderr
+    elif stderr_invalid:
+        assert stderr == INVALID_HANDLE_VALUE
+        assert stdout == 200
+        assert valid_handle == stdout
+    else:
+        assert stderr == 100
+        assert stdout == 200
+        assert valid_handle == stderr
+
+
 def test_get_console_info():
-    """Test get_console_info()."""
+    """Test function."""
     # Test error.
     if IS_WINDOWS:
         with pytest.raises(OSError):
@@ -96,7 +149,7 @@ def test_get_console_info():
 
 
 def test_windows_stream():
-    """Test WindowsStream class."""
+    """Test class."""
     # Test error.
     if IS_WINDOWS:
         stream = WindowsStream(init_kernel32()[0], INVALID_HANDLE_VALUE, StringIO())
@@ -149,7 +202,7 @@ def test_windows(monkeypatch, tmpdir):
     """
     init_k32, atexit = list(), list()
     kernel32 = MockKernel32()
-    monkeypatch.setattr('colorclass.windows.init_kernel32', lambda: (init_k32.append(True) or (kernel32, 1, 2)))
+    monkeypatch.setattr('colorclass.windows.init_kernel32', lambda: (init_k32.append(True) or (kernel32, 1, 2, 1)))
     monkeypatch.setattr(ANSICodeMapping, 'LIGHT_BACKGROUND', None)
     monkeypatch.setattr('atexit.register', lambda f: atexit.append(f))
 
@@ -175,8 +228,7 @@ def test_windows(monkeypatch, tmpdir):
     assert not Windows.is_enabled()
 
     # Test replace streams.
-    stderr, stdout = tmpdir.join('stderr').open(mode='wb'), tmpdir.join('stdout').open(mode='wb')
-    mock_sys = type('mock_sys', (), dict(stderr=stderr, stdout=stdout))
+    mock_sys = MockSys(stderr=tmpdir.join('stderr').open(mode='wb'), stdout=tmpdir.join('stdout').open(mode='wb'))
     monkeypatch.setattr('colorclass.windows.sys', mock_sys)
     assert Windows.enable()
     assert init_k32.pop() and not init_k32
