@@ -193,63 +193,6 @@ def test_windows_stream():
     assert stream.colors == (WINDOWS_CODES['red'], WINDOWS_CODES['bgblue'])
 
 
-@pytest.mark.skipif(str(not IS_WINDOWS))
-def test_windows(monkeypatch, tmpdir):
-    """Test Windows class.
-
-    :param monkeypatch: pytest fixture.
-    :param tmpdir: pytest fixture.
-    """
-    init_k32, atexit = list(), list()
-    kernel32 = MockKernel32()
-    monkeypatch.setattr('colorclass.windows.init_kernel32', lambda: (init_k32.append(True) or (kernel32, 1, 2, 1)))
-    monkeypatch.setattr(ANSICodeMapping, 'LIGHT_BACKGROUND', None)
-    monkeypatch.setattr('atexit.register', lambda f: atexit.append(f))
-
-    # Test without auto_colors.
-    assert not Windows.enable(reset_atexit=True, replace_streams=False)
-    assert init_k32.pop() and not init_k32  # assert called.
-    assert ANSICodeMapping.LIGHT_BACKGROUND is None
-    assert atexit.pop() and not atexit  # assert called.
-    assert not Windows.is_enabled()  # assert streams not replaced.
-    assert not Windows.disable()
-    assert not Windows.disable()
-
-    # Test auto_colors.
-    assert not Windows.enable(auto_colors=True, replace_streams=False)
-    assert init_k32.pop() and not init_k32
-    assert ANSICodeMapping.LIGHT_BACKGROUND is False
-    assert not atexit
-    assert not Windows.is_enabled()
-    kernel32.wAttributes = 240
-    assert not Windows.enable(auto_colors=True, replace_streams=False)
-    assert init_k32.pop() and not init_k32
-    assert ANSICodeMapping.LIGHT_BACKGROUND is True
-    assert not Windows.is_enabled()
-
-    # Test replace streams.
-    mock_sys = MockSys(stderr=tmpdir.join('stderr').open(mode='wb'), stdout=tmpdir.join('stdout').open(mode='wb'))
-    monkeypatch.setattr('colorclass.windows.sys', mock_sys)
-    assert Windows.enable()
-    assert init_k32.pop() and not init_k32
-    assert Windows.is_enabled()
-    assert Windows.is_enabled(True)
-    assert not Windows.enable(auto_colors=True)  # Already enabled. Using auto_colors to test bg_color from existing.
-    assert not init_k32
-    assert Windows.is_enabled()
-
-    # Disable.
-    assert Windows.disable()
-    assert not Windows.is_enabled()
-    assert not Windows.disable()
-    assert not Windows.is_enabled()
-
-    # Test context manager.
-    with Windows():
-        assert Windows.is_enabled()
-    assert not Windows.is_enabled()
-
-
 @pytest.mark.skipif(str(IS_WINDOWS))
 def test_windows_nix():
     """Test enable/disable on non-Windows platforms."""
@@ -260,6 +203,88 @@ def test_windows_nix():
     assert not Windows.is_enabled()
     assert not hasattr(sys.stderr, '_original_stream')
     assert not hasattr(sys.stdout, '_original_stream')
+
+
+def test_windows_auto_colors(monkeypatch):
+    """Test Windows class with/out valid_handle and with/out auto_colors. Don't replace streams.
+
+    :param monkeypatch: pytest fixture.
+    """
+    mock_sys = MockSys()
+    monkeypatch.setattr('colorclass.windows.atexit', type('', (), {'register': staticmethod(lambda _: 0 / 0)}))
+    monkeypatch.setattr('colorclass.windows.IS_WINDOWS', True)
+    monkeypatch.setattr('colorclass.windows.sys', mock_sys)
+    monkeypatch.setattr(ANSICodeMapping, 'LIGHT_BACKGROUND', None)
+
+    # Test valid_handle is None.
+    monkeypatch.setattr('colorclass.windows.init_kernel32', lambda: (None, 1, 2, None))
+    assert not Windows.enable()
+    assert not Windows.is_enabled()
+    assert not hasattr(mock_sys.stderr, '_original_stream')
+    assert not hasattr(mock_sys.stdout, '_original_stream')
+    assert ANSICodeMapping.LIGHT_BACKGROUND is None
+
+    # Test auto colors dark background.
+    kernel32 = MockKernel32()
+    monkeypatch.setattr('colorclass.windows.init_kernel32', lambda: (kernel32, 1, 2, 1))
+    assert not Windows.enable(auto_colors=True, replace_streams=False)
+    assert not Windows.is_enabled()
+    assert not hasattr(mock_sys.stderr, '_original_stream')
+    assert not hasattr(mock_sys.stdout, '_original_stream')
+    assert ANSICodeMapping.LIGHT_BACKGROUND is False
+
+    # Test auto colors light background.
+    kernel32.wAttributes = 240
+    assert not Windows.enable(auto_colors=True, replace_streams=False)
+    assert not Windows.is_enabled()
+    assert not hasattr(mock_sys.stderr, '_original_stream')
+    assert not hasattr(mock_sys.stdout, '_original_stream')
+    assert ANSICodeMapping.LIGHT_BACKGROUND is True
+
+
+@pytest.mark.parametrize('valid', ['stderr', 'stdout', 'both'])
+def test_windows_replace_streams(monkeypatch, tmpdir, valid):
+    """Test Windows class stdout and stderr replacement.
+
+    :param monkeypatch: pytest fixture.
+    :param tmpdir: pytest fixture.
+    :param str valid: Which mock stream(s) should be valid.
+    """
+    ac = list()  # atexit called.
+    mock_sys = MockSys(stderr=tmpdir.join('stderr').open(mode='wb'), stdout=tmpdir.join('stdout').open(mode='wb'))
+    monkeypatch.setattr('colorclass.windows.atexit', type('', (), {'register': staticmethod(lambda _: ac.append(1))}))
+    monkeypatch.setattr('colorclass.windows.IS_WINDOWS', True)
+    monkeypatch.setattr('colorclass.windows.sys', mock_sys)
+
+    # Mock init_kernel32.
+    stderr = 1 if valid in ('stderr', 'both') else INVALID_HANDLE_VALUE
+    stdout = 2 if valid in ('stdout', 'both') else INVALID_HANDLE_VALUE
+    valid_handle = stderr if stderr != INVALID_HANDLE_VALUE else stdout
+    monkeypatch.setattr('colorclass.windows.init_kernel32', lambda: (MockKernel32(), stderr, stdout, valid_handle))
+
+    # Test.
+    assert Windows.enable(reset_atexit=True)
+    assert Windows.is_enabled()
+    assert len(ac) == 1
+    if stderr != INVALID_HANDLE_VALUE:
+        assert hasattr(mock_sys.stderr, '_original_stream')
+    else:
+        assert not hasattr(mock_sys.stderr, '_original_stream')
+    if stdout != INVALID_HANDLE_VALUE:
+        assert hasattr(mock_sys.stdout, '_original_stream')
+    else:
+        assert not hasattr(mock_sys.stdout, '_original_stream')
+
+    # Test multiple disable.
+    assert Windows.disable()
+    assert not Windows.is_enabled()
+    assert not Windows.disable()
+    assert not Windows.is_enabled()
+
+    # Test context manager.
+    with Windows():
+        assert Windows.is_enabled()
+    assert not Windows.is_enabled()
 
 
 @pytest.mark.skipif(str(not IS_WINDOWS))

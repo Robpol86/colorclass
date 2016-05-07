@@ -326,47 +326,36 @@ class Windows(object):
         if not IS_WINDOWS:
             return False  # Windows only.
 
-        # Reuse/get values from init_kernel32().
-        kernel32, stderr, stdout = None, None, None
-        if hasattr(sys.stderr, '_original_stream'):
-            kernel32 = getattr(sys.stderr, '_kernel32')
-            stderr = getattr(sys.stderr, '_stream_handle')
-        if hasattr(sys.stdout, '_original_stream'):
-            kernel32 = getattr(sys.stdout, '_kernel32')
-            stdout = getattr(sys.stdout, '_stream_handle')
-        if not all((kernel32, stderr, stdout)):
-            kernel32, stderr, stdout, _ = init_kernel32()
+        # Get values from init_kernel32().
+        kernel32, stderr, stdout, valid_handle = init_kernel32()
+        if valid_handle is None:
+            return False  # No valid handles, nothing to do.
 
         # Set auto colors:
         if auto_colors:
-            bg_color = getattr(sys.stdout, 'default_bg', getattr(sys.stderr, 'default_bg', None))
-            if bg_color is None:
-                bg_color = WindowsStream(kernel32, stderr, sys.stderr).default_bg
+            bg_color = WindowsStream(kernel32, valid_handle, None).default_bg
             if bg_color in (112, 96, 240, 176, 224, 208, 160):
                 ANSICodeMapping.set_light_background()
             else:
                 ANSICodeMapping.set_dark_background()
 
-        # Reset on exit if requested.
-        if reset_atexit:
-            atexit.register(cls.disable)
-
         # Stop if requested.
         if not replace_streams:
             return False
 
+        # Reset on exit if requested.
+        if reset_atexit:
+            atexit.register(cls.disable)
+
         # Overwrite stream references.
-        changed = False
-        if not hasattr(sys.stderr, '_original_stream'):
-            changed = True
+        if stderr != INVALID_HANDLE_VALUE:
             sys.stderr.flush()
             sys.stderr = WindowsStream(kernel32, stderr, sys.stderr)
-        if not hasattr(sys.stdout, '_original_stream'):
-            changed = True
+        if stdout != INVALID_HANDLE_VALUE:
             sys.stdout.flush()
             sys.stdout = WindowsStream(kernel32, stdout, sys.stdout)
 
-        return changed
+        return True
 
     def __init__(self, auto_colors=False, replace_streams=True):
         """Constructor."""
