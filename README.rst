@@ -136,11 +136,10 @@ Changelog
 
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
-Unreleased
-----------
+2.1.0 - 2016-05-07
+------------------
 
 Added
-    * Option to not replace stdout/stderr streams in the Windows class. Latest Windows 10 natively supports ANSI colors.
     * ``keep_tags`` boolean keyword argument to Color(). Prevents colorclass from parsing curly brackets.
     * Automatically skip replacing stderr/stdout streams on latest Windows 10 versions with native ANSI color support.
 
