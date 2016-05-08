@@ -142,12 +142,15 @@ Unreleased
 Added
     * Option to not replace stdout/stderr streams in the Windows class. Latest Windows 10 natively supports ANSI colors.
     * ``keep_tags`` boolean keyword argument to Color(). Prevents colorclass from parsing curly brackets.
+    * Automatically skip replacing stderr/stdout streams on latest Windows 10 versions with native ANSI color support.
 
 Changed
     * Refactored most of windows.py.
+    * Background color determined from either stderr or stdout, instead of just one stream (e.g. piping stderr to file).
 
 Fixed
     * https://github.com/Robpol86/colorclass/issues/16
+    * https://github.com/Robpol86/colorclass/issues/18
 
 2.0.0 - 2016-04-10
 ------------------

@@ -23,11 +23,23 @@ from tests.screenshot import RunNewConsole, screenshot_until_match
 class MockKernel32(object):
     """Mock kernel32."""
 
-    def __init__(self, stderr=windows.INVALID_HANDLE_VALUE, stdout=windows.INVALID_HANDLE_VALUE):
+    def __init__(self, stderr=windows.INVALID_HANDLE_VALUE, stdout=windows.INVALID_HANDLE_VALUE, set_mode=0x0):
         """Constructor."""
+        self.set_mode = set_mode
         self.stderr = stderr
         self.stdout = stdout
         self.wAttributes = 7
+
+    def GetConsoleMode(self, _, dword_pointer):  # noqa
+        """Mock GetConsoleMode.
+
+        :param _: Unused handle.
+        :param dword_pointer: ctypes.byref(lpdword) return value.
+        """
+        ulong_ptr = ctypes.POINTER(ctypes.c_ulong)
+        dword = ctypes.cast(dword_pointer, ulong_ptr).contents  # Dereference pointer.
+        dword.value = self.set_mode
+        return 1
 
     def GetConsoleScreenBufferInfo(self, _, csbi_pointer):  # noqa
         """Mock GetConsoleScreenBufferInfo.
@@ -137,26 +149,35 @@ def test_get_console_info():
 
     # Test no error with mock methods.
     kernel32 = MockKernel32()
-    fg_color, bg_color = windows.get_console_info(kernel32, windows.INVALID_HANDLE_VALUE)
+    fg_color, bg_color, native_ansi = windows.get_console_info(kernel32, windows.INVALID_HANDLE_VALUE)
     assert fg_color == 7
     assert bg_color == 0
+    assert native_ansi is False
+
+    # Test different console modes.
+    for not_native in (0x0, 0x1, 0x2, 0x1 | 0x2):
+        kernel32.set_mode = not_native
+        assert not windows.get_console_info(kernel32, windows.INVALID_HANDLE_VALUE)[-1]
+    for native in (i | 0x4 for i in (0x0, 0x1, 0x2, 0x1 | 0x2)):
+        kernel32.set_mode = native
+        assert windows.get_console_info(kernel32, windows.INVALID_HANDLE_VALUE)[-1]
 
 
 @pytest.mark.parametrize('stderr', [1, windows.INVALID_HANDLE_VALUE])
 @pytest.mark.parametrize('stdout', [2, windows.INVALID_HANDLE_VALUE])
-def test_get_bg_color(stderr, stdout):
+def test_bg_color_native_ansi(stderr, stdout):
     """Test function.
 
     :param int stderr: Value of parameter.
     :param int stdout: Value of parameter.
     """
-    kernel32 = MockKernel32()
+    kernel32 = MockKernel32(set_mode=0x4)
     kernel32.wAttributes = 240
-    actual = windows.get_bg_color(kernel32, stderr, stdout)
+    actual = windows.bg_color_native_ansi(kernel32, stderr, stdout)
     if stderr == windows.INVALID_HANDLE_VALUE and stdout == windows.INVALID_HANDLE_VALUE:
-        expected = 0
+        expected = 0, False
     else:
-        expected = 240
+        expected = 240, True
     assert actual == expected
 
 
@@ -238,8 +259,9 @@ def test_windows_auto_colors(monkeypatch):
     assert ANSICodeMapping.LIGHT_BACKGROUND is None
 
     # Test auto colors dark background.
+    kernel32.set_mode = 0x4  # Enable native ANSI to have Windows skip replacing streams.
     monkeypatch.setattr(windows, 'init_kernel32', lambda: (kernel32, 1, 2))
-    assert not windows.Windows.enable(auto_colors=True, replace_streams=False)
+    assert not windows.Windows.enable(auto_colors=True)
     assert not windows.Windows.is_enabled()
     assert not hasattr(mock_sys.stderr, '_original_stream')
     assert not hasattr(mock_sys.stdout, '_original_stream')
@@ -247,7 +269,7 @@ def test_windows_auto_colors(monkeypatch):
 
     # Test auto colors light background.
     kernel32.wAttributes = 240
-    assert not windows.Windows.enable(auto_colors=True, replace_streams=False)
+    assert not windows.Windows.enable(auto_colors=True)
     assert not windows.Windows.is_enabled()
     assert not hasattr(mock_sys.stderr, '_original_stream')
     assert not hasattr(mock_sys.stdout, '_original_stream')

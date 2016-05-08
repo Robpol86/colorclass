@@ -8,6 +8,7 @@ import sys
 from colorclass.codes import ANSICodeMapping, BASE_CODES
 from colorclass.core import RE_SPLIT
 
+ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
 INVALID_HANDLE_VALUE = -1
 IS_WINDOWS = sys.platform == 'win32'
 RE_NUMBER_SEARCH = re.compile(r'\033\[([\d;]+)m')
@@ -114,18 +115,23 @@ def get_console_info(kernel32, handle):
     https://code.google.com/p/colorama/issues/detail?id=47
     https://bitbucket.org/pytest-dev/py/src/4617fe46/py/_io/terminalwriter.py
 
-    :raise OSError: When GetConsoleScreenBufferInfo API call fails.
+    Windows 10 Insider since around February 2016 finally introduced support for ANSI colors. No need to replace stdout
+    and stderr streams to intercept colors and issue multiple SetConsoleTextAttribute() calls for these consoles.
+
+    :raise OSError: When GetConsoleScreenBufferInfo or GetConsoleMode API calls fail.
 
     :param ctypes.windll.kernel32 kernel32: Loaded kernel32 instance.
     :param int handle: stderr or stdout handle.
 
-    :return: Foreground and background colors (integers).
+    :return: Foreground and background colors (integers) as well as native ANSI support (bool).
     :rtype: tuple
     """
     # Query Win32 API.
     csbi = ConsoleScreenBufferInfo()  # Populated by GetConsoleScreenBufferInfo.
     lpcsbi = ctypes.byref(csbi)
-    if not kernel32.GetConsoleScreenBufferInfo(handle, lpcsbi):
+    dword = ctypes.c_ulong()  # Populated by GetConsoleMode.
+    lpdword = ctypes.byref(dword)
+    if not kernel32.GetConsoleScreenBufferInfo(handle, lpcsbi) or not kernel32.GetConsoleMode(handle, lpdword):
         raise ctypes.WinError()
 
     # Parse data.
@@ -135,32 +141,33 @@ def get_console_info(kernel32, handle):
     # terminal_height = int(csbi.srWindow.Bottom - csbi.srWindow.Top)
     fg_color = csbi.wAttributes % 16
     bg_color = csbi.wAttributes & 240
+    native_ansi = bool(dword.value & ENABLE_VIRTUAL_TERMINAL_PROCESSING)
 
-    return fg_color, bg_color
+    return fg_color, bg_color, native_ansi
 
 
-def get_bg_color(kernel32, stderr, stdout):
-    """Get background color.
+def bg_color_native_ansi(kernel32, stderr, stdout):
+    """Get background color and if console supports ANSI colors natively for both streams.
 
     :param ctypes.windll.kernel32 kernel32: Loaded kernel32 instance.
     :param int stderr: stderr handle.
     :param int stdout: stdout handle.
 
-    :return: Background color (int).
-    :rtype: int
+    :return: Background color (int) and native ANSI support (bool).
+    :rtype: tuple
     """
     try:
         if stderr == INVALID_HANDLE_VALUE:
             raise OSError
-        bg_color = get_console_info(kernel32, stderr)[-1]
+        bg_color, native_ansi = get_console_info(kernel32, stderr)[1:]
     except OSError:
         try:
             if stdout == INVALID_HANDLE_VALUE:
                 raise OSError
-            bg_color = get_console_info(kernel32, stdout)[-1]
+            bg_color, native_ansi = get_console_info(kernel32, stdout)[1:]
         except OSError:
-            bg_color = WINDOWS_CODES['black']
-    return bg_color
+            bg_color, native_ansi = WINDOWS_CODES['black'], False
+    return bg_color, native_ansi
 
 
 class WindowsStream(object):
@@ -208,7 +215,7 @@ class WindowsStream(object):
     def colors(self):
         """Return the current foreground and background colors."""
         try:
-            return get_console_info(self._kernel32, self._stream_handle)
+            return get_console_info(self._kernel32, self._stream_handle)[:2]
         except OSError:
             return WINDOWS_CODES['white'], WINDOWS_CODES['black']
 
@@ -325,17 +332,13 @@ class Windows(object):
             return hasattr(sys.stderr, '_original_stream') or hasattr(sys.stdout, '_original_stream')
 
     @classmethod
-    def enable(cls, auto_colors=False, reset_atexit=False, replace_streams=True):
+    def enable(cls, auto_colors=False, reset_atexit=False):
         """Enable color text with print() or sys.stdout.write() (stderr too).
 
         :param bool auto_colors: Automatically selects dark or light colors based on current terminal's background
             color. Only works with {autored} and related tags.
         :param bool reset_atexit: Resets original colors upon Python exit (in case you forget to reset it yourself with
-            a closing tag).
-        :param bool replace_streams: Replace stdout and stderr streams with WindowsStream instances that intercept ANSI
-            color codes and call win32 APIs to change the text for the next character. Note on recent versions of
-            Windows 10 (Feb 2016 I think) ANSI color support is finally built into the console, so replacing streams is
-            no longer needed.
+            a closing tag). Does nothing on native ANSI consoles.
 
         :return: If streams replaced successfully.
         :rtype: bool
@@ -349,7 +352,7 @@ class Windows(object):
             return False  # No valid handles, nothing to do.
 
         # Get console info.
-        bg_color = get_bg_color(kernel32, stderr, stdout)
+        bg_color, native_ansi = bg_color_native_ansi(kernel32, stderr, stdout)
 
         # Set auto colors:
         if auto_colors:
@@ -358,8 +361,8 @@ class Windows(object):
             else:
                 ANSICodeMapping.set_dark_background()
 
-        # Stop if requested.
-        if not replace_streams:
+        # Don't replace streams if ANSI codes are natively supported.
+        if native_ansi:
             return False
 
         # Reset on exit if requested.
@@ -376,14 +379,13 @@ class Windows(object):
 
         return True
 
-    def __init__(self, auto_colors=False, replace_streams=True):
+    def __init__(self, auto_colors=False):
         """Constructor."""
         self.auto_colors = auto_colors
-        self.replace_streams = replace_streams
 
     def __enter__(self):
         """Context manager, enables colors on Windows."""
-        self.enable(auto_colors=self.auto_colors, replace_streams=self.replace_streams)
+        self.enable(auto_colors=self.auto_colors)
 
     def __exit__(self, *_):
         """Context manager, disabled colors on Windows."""
