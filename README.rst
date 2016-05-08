@@ -5,12 +5,10 @@ colorclass
 Yet another ANSI color text library for Python. Provides "auto colors" for dark/light terminals. Works on Linux, OS X,
 and Windows. For Windows support you just need to call ``Windows.enable()`` in your application.
 
-On Linux/OS X ``autocolors`` are toggled by calling ``set_light_background()`` and ``set_dark_background()``. On the
-latest version of Windows 10 (after February 2016) it seems like the console finally supports ANSI color codes natively.
-In this case you'll just need to call ``Windows.enable(auto_colors=True, replace_streams=False)`` to take advantage of
-automatically adjusting autocolors to light/dark backgrounds. On previous versions of Windows you'll need to instead
-call ``Windows.enable(auto_colors=True)`` (replace_streams is True by default) to get colors working. It's ok to leave
-replace_streams=True even on the latest version of Windows 10, it's just not necessary.
+On Linux/OS X ``autocolors`` are toggled by calling ``set_light_background()`` and ``set_dark_background()``. On Windows
+this can be done automatically if you call ``Windows.enable(auto_colors=True)``. Even though the latest Windows 10 does
+support ANSI color codes natively, you still need to run Windows.enable() to take advantage of automatically detecting
+the console's background color.
 
 In Python2.x this library subclasses ``unicode``, while on Python3.x it subclasses ``str``.
 
