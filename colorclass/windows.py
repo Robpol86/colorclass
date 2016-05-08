@@ -321,15 +321,9 @@ class Windows(object):
         return changed
 
     @staticmethod
-    def is_enabled(both=False):
-        """Return True if either stderr or stdout has colors enabled.
-
-        :param bool both: Return True if both stderr or stdout have colors enabled.
-        """
-        if both:
-            return hasattr(sys.stderr, '_original_stream') and hasattr(sys.stdout, '_original_stream')
-        else:
-            return hasattr(sys.stderr, '_original_stream') or hasattr(sys.stdout, '_original_stream')
+    def is_enabled():
+        """Return True if either stderr or stdout has colors enabled."""
+        return hasattr(sys.stderr, '_original_stream') or hasattr(sys.stdout, '_original_stream')
 
     @classmethod
     def enable(cls, auto_colors=False, reset_atexit=False):
