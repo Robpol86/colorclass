@@ -81,7 +81,7 @@ def init_kernel32(kernel32=None):
 
     :param kernel32: Optional mock kernel32 object. For testing.
 
-    :return: Loaded kernel32 instance, stderr handle (int), stdout handle (int), a valid handle to replace.
+    :return: Loaded kernel32 instance, stderr handle (int), stdout handle (int).
     :rtype: tuple
     """
     if not kernel32:
@@ -104,15 +104,7 @@ def init_kernel32(kernel32=None):
     else:
         stdout = kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
 
-    # Select either stderr or stdout, whichever is valid.
-    if stderr != INVALID_HANDLE_VALUE:
-        valid_handle = stderr
-    elif stdout != INVALID_HANDLE_VALUE:
-        valid_handle = stdout
-    else:
-        valid_handle = None
-
-    return kernel32, stderr, stdout, valid_handle
+    return kernel32, stderr, stdout
 
 
 def get_console_info(kernel32, handle):
@@ -132,7 +124,8 @@ def get_console_info(kernel32, handle):
     """
     # Query Win32 API.
     csbi = ConsoleScreenBufferInfo()  # Populated by GetConsoleScreenBufferInfo.
-    if not kernel32.GetConsoleScreenBufferInfo(handle, ctypes.byref(csbi)):
+    lpcsbi = ctypes.byref(csbi)
+    if not kernel32.GetConsoleScreenBufferInfo(handle, lpcsbi):
         raise ctypes.WinError()
 
     # Parse data.
@@ -144,6 +137,30 @@ def get_console_info(kernel32, handle):
     bg_color = csbi.wAttributes & 240
 
     return fg_color, bg_color
+
+
+def get_bg_color(kernel32, stderr, stdout):
+    """Get background color.
+
+    :param ctypes.windll.kernel32 kernel32: Loaded kernel32 instance.
+    :param int stderr: stderr handle.
+    :param int stdout: stdout handle.
+
+    :return: Background color (int).
+    :rtype: int
+    """
+    try:
+        if stderr == INVALID_HANDLE_VALUE:
+            raise OSError
+        bg_color = get_console_info(kernel32, stderr)[-1]
+    except OSError:
+        try:
+            if stdout == INVALID_HANDLE_VALUE:
+                raise OSError
+            bg_color = get_console_info(kernel32, stdout)[-1]
+        except OSError:
+            bg_color = WINDOWS_CODES['black']
+    return bg_color
 
 
 class WindowsStream(object):
@@ -327,13 +344,15 @@ class Windows(object):
             return False  # Windows only.
 
         # Get values from init_kernel32().
-        kernel32, stderr, stdout, valid_handle = init_kernel32()
-        if valid_handle is None:
+        kernel32, stderr, stdout = init_kernel32()
+        if stderr == INVALID_HANDLE_VALUE and stdout == INVALID_HANDLE_VALUE:
             return False  # No valid handles, nothing to do.
+
+        # Get console info.
+        bg_color = get_bg_color(kernel32, stderr, stdout)
 
         # Set auto colors:
         if auto_colors:
-            bg_color = WindowsStream(kernel32, valid_handle, None).default_bg
             if bg_color in (112, 96, 240, 176, 224, 208, 160):
                 ANSICodeMapping.set_light_background()
             else:

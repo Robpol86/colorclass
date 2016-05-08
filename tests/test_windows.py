@@ -73,13 +73,13 @@ def test_init_kernel32_unique():
     k32_a.GetStdHandle.argtypes = [ctypes.c_void_p]
     k32_a.GetStdHandle.restype = ctypes.c_ulong
 
-    k32_b, stderr_b, stdout_b = windows.init_kernel32()[:3]
+    k32_b, stderr_b, stdout_b = windows.init_kernel32()
 
     k32_c = ctypes.LibraryLoader(ctypes.WinDLL).kernel32
     k32_c.GetStdHandle.argtypes = [ctypes.c_long]
     k32_c.GetStdHandle.restype = ctypes.c_short
 
-    k32_d, stderr_d, stdout_d = windows.init_kernel32()[:3]
+    k32_d, stderr_d, stdout_d = windows.init_kernel32()
 
     # Verify external.
     assert k32_a.GetStdHandle.argtypes == [ctypes.c_void_p]
@@ -112,24 +112,20 @@ def test_init_kernel32_valid_handle(monkeypatch, stderr_invalid, stdout_invalid)
     if stdout_invalid:
         setattr(mock_sys.stdout, '_original_stream', True)
 
-    stderr, stdout, valid_handle = windows.init_kernel32(MockKernel32(stderr=100, stdout=200))[1:]
+    stderr, stdout = windows.init_kernel32(MockKernel32(stderr=100, stdout=200))[1:]
 
     if stderr_invalid and stdout_invalid:
         assert stderr == windows.INVALID_HANDLE_VALUE
         assert stdout == windows.INVALID_HANDLE_VALUE
-        assert valid_handle is None
     elif stdout_invalid:
         assert stderr == 100
         assert stdout == windows.INVALID_HANDLE_VALUE
-        assert valid_handle == stderr
     elif stderr_invalid:
         assert stderr == windows.INVALID_HANDLE_VALUE
         assert stdout == 200
-        assert valid_handle == stdout
     else:
         assert stderr == 100
         assert stdout == 200
-        assert valid_handle == stderr
 
 
 def test_get_console_info():
@@ -139,10 +135,29 @@ def test_get_console_info():
         with pytest.raises(OSError):
             windows.get_console_info(windows.init_kernel32()[0], windows.INVALID_HANDLE_VALUE)
 
-    # Test no error with mock GetConsoleScreenBufferInfo.
-    fg_color, bg_color = windows.get_console_info(MockKernel32(), windows.INVALID_HANDLE_VALUE)
+    # Test no error with mock methods.
+    kernel32 = MockKernel32()
+    fg_color, bg_color = windows.get_console_info(kernel32, windows.INVALID_HANDLE_VALUE)
     assert fg_color == 7
     assert bg_color == 0
+
+
+@pytest.mark.parametrize('stderr', [1, windows.INVALID_HANDLE_VALUE])
+@pytest.mark.parametrize('stdout', [2, windows.INVALID_HANDLE_VALUE])
+def test_get_bg_color(stderr, stdout):
+    """Test function.
+
+    :param int stderr: Value of parameter.
+    :param int stdout: Value of parameter.
+    """
+    kernel32 = MockKernel32()
+    kernel32.wAttributes = 240
+    actual = windows.get_bg_color(kernel32, stderr, stdout)
+    if stderr == windows.INVALID_HANDLE_VALUE and stdout == windows.INVALID_HANDLE_VALUE:
+        expected = 0
+    else:
+        expected = 240
+    assert actual == expected
 
 
 def test_windows_stream():
@@ -213,8 +228,9 @@ def test_windows_auto_colors(monkeypatch):
     monkeypatch.setattr(windows, 'sys', mock_sys)
     monkeypatch.setattr(ANSICodeMapping, 'LIGHT_BACKGROUND', None)
 
-    # Test valid_handle is None.
-    monkeypatch.setattr(windows, 'init_kernel32', lambda: (None, 1, 2, None))
+    # Test no valid handles.
+    kernel32 = MockKernel32()
+    monkeypatch.setattr(windows, 'init_kernel32', lambda: (kernel32, -1, -1))
     assert not windows.Windows.enable()
     assert not windows.Windows.is_enabled()
     assert not hasattr(mock_sys.stderr, '_original_stream')
@@ -222,8 +238,7 @@ def test_windows_auto_colors(monkeypatch):
     assert ANSICodeMapping.LIGHT_BACKGROUND is None
 
     # Test auto colors dark background.
-    kernel32 = MockKernel32()
-    monkeypatch.setattr(windows, 'init_kernel32', lambda: (kernel32, 1, 2, 1))
+    monkeypatch.setattr(windows, 'init_kernel32', lambda: (kernel32, 1, 2))
     assert not windows.Windows.enable(auto_colors=True, replace_streams=False)
     assert not windows.Windows.is_enabled()
     assert not hasattr(mock_sys.stderr, '_original_stream')
@@ -256,8 +271,7 @@ def test_windows_replace_streams(monkeypatch, tmpdir, valid):
     # Mock init_kernel32.
     stderr = 1 if valid in ('stderr', 'both') else windows.INVALID_HANDLE_VALUE
     stdout = 2 if valid in ('stdout', 'both') else windows.INVALID_HANDLE_VALUE
-    valid_handle = stderr if stderr != windows.INVALID_HANDLE_VALUE else stdout
-    monkeypatch.setattr(windows, 'init_kernel32', lambda: (MockKernel32(), stderr, stdout, valid_handle))
+    monkeypatch.setattr(windows, 'init_kernel32', lambda: (MockKernel32(), stderr, stdout))
 
     # Test.
     assert windows.Windows.enable(reset_atexit=True)
