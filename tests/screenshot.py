@@ -96,18 +96,21 @@ class RunNewConsole(object):
         self.process_info = ProcessInfo()
         self.command_str = subprocess.list2cmdline(command).encode('ascii')
         self._handles = list()
+        self._kernel32 = ctypes.LibraryLoader(ctypes.WinDLL).kernel32
+        self._kernel32.GetExitCodeProcess.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_ulong)]
+        self._kernel32.GetExitCodeProcess.restype = ctypes.c_long
 
     def __del__(self):
         """Close win32 handles."""
         while self._handles:
             try:
-                ctypes.windll.kernel32.CloseHandle(self._handles.pop(0))  # .pop() is thread safe.
+                self._kernel32.CloseHandle(self._handles.pop(0))  # .pop() is thread safe.
             except IndexError:
                 break
 
     def __enter__(self):
         """Entering the `with` block. Runs the process."""
-        if not ctypes.windll.kernel32.CreateProcessA(
+        if not self._kernel32.CreateProcessA(
             None,  # lpApplicationName
             self.command_str,  # lpCommandLine
             None,  # lpProcessAttributes
@@ -145,7 +148,7 @@ class RunNewConsole(object):
             status = ctypes.c_ulong(STILL_ACTIVE)
             while status.value == STILL_ACTIVE:
                 time.sleep(0.1)
-                if not ctypes.windll.kernel32.GetExitCodeProcess(self.process_info.hProcess, ctypes.byref(status)):
+                if not self._kernel32.GetExitCodeProcess(self.process_info.hProcess, ctypes.byref(status)):
                     raise ctypes.WinError()
             assert status.value == 0
         finally:
