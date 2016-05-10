@@ -357,5 +357,5 @@ def test_enable_disable(tmpdir):
 
     # Run.
     with RunNewConsole(command) as gen:
-        assert screenshot_until_match(str(screenshot), 15, with_colors, 2, gen)
-        assert screenshot_until_match(str(screenshot), 15, sans_colors, 2, gen)
+        screenshot_until_match(str(screenshot), 15, with_colors, 2, gen)
+        screenshot_until_match(str(screenshot), 15, sans_colors, 2, gen)

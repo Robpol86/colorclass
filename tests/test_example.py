@@ -93,4 +93,4 @@ def test_windows_screenshot(colors, light_bg):
 
     # Run.
     with RunNewConsole(command, maximized=True, white_bg=light_bg) as gen:
-        assert screenshot_until_match(str(screenshot), 15, candidates, expected_count, gen)
+        screenshot_until_match(str(screenshot), 15, candidates, expected_count, gen)

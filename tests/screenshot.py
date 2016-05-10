@@ -107,7 +107,7 @@ class RunNewConsole(object):
 
     def __enter__(self):
         """Entering the `with` block. Runs the process."""
-        assert ctypes.windll.kernel32.CreateProcessA(
+        if not ctypes.windll.kernel32.CreateProcessA(
             None,  # lpApplicationName
             self.command_str,  # lpCommandLine
             None,  # lpProcessAttributes
@@ -118,7 +118,8 @@ class RunNewConsole(object):
             str(PROJECT_ROOT).encode('ascii'),  # lpCurrentDirectory
             ctypes.byref(self.startup_info),  # lpStartupInfo
             ctypes.byref(self.process_info)  # lpProcessInformation
-        )
+        ):
+            raise ctypes.WinError()
 
         # Add handles added by the OS.
         self._handles.append(self.process_info.hProcess)
@@ -144,7 +145,8 @@ class RunNewConsole(object):
             status = ctypes.c_ulong(STILL_ACTIVE)
             while status.value == STILL_ACTIVE:
                 time.sleep(0.1)
-                assert ctypes.windll.kernel32.GetExitCodeProcess(self.process_info.hProcess, ctypes.byref(status))
+                if not ctypes.windll.kernel32.GetExitCodeProcess(self.process_info.hProcess, ctypes.byref(status)):
+                    raise ctypes.WinError()
             assert status.value == 0
         finally:
             # Close handles.
@@ -237,6 +239,36 @@ def count_subimages(screenshot, subimg):
     return occurrences
 
 
+def try_candidates(screenshot, subimg_candidates, expected_count):
+    """Call count_subimages() for each subimage candidate until.
+
+    If you get ImportError run "pip install pillow". Only OSX and Windows is supported.
+
+    :param PIL.Image.Image screenshot: Screen shot to search through.
+    :param iter subimg_candidates: Subimage paths to look for. List of strings.
+    :param int expected_count: Try until any a subimage candidate is found this many times.
+
+    :return: Number of times subimg appears in the screenshot.
+    :rtype: int
+    """
+    from PIL import Image
+    count_found = 0
+
+    for subimg_path in subimg_candidates:
+        with Image.open(subimg_path) as rgba_s:
+            with rgba_s.convert(mode='RGB') as subimg:
+                # Make sure subimage isn't too large.
+                assert subimg.width < 256
+                assert subimg.height < 256
+
+                # Count.
+                count_found = count_subimages(screenshot, subimg)
+                if count_found == expected_count:
+                    break  # No need to try other candidates.
+
+    return count_found
+
+
 def screenshot_until_match(save_to, timeout, subimg_candidates, expected_count, gen):
     """Take screenshots until one of the 'done' subimages is found. Image is saved when subimage found or at timeout.
 
@@ -247,11 +279,8 @@ def screenshot_until_match(save_to, timeout, subimg_candidates, expected_count, 
     :param iter subimg_candidates: Subimage paths to look for. List of strings.
     :param int expected_count: Keep trying until any of subimg_candidates is found this many times.
     :param iter gen: Generator yielding window position and size to crop screenshot to.
-
-    :return: If one of the 'done' subimages was found somewhere in the screenshot.
-    :rtype: bool
     """
-    from PIL import Image, ImageGrab
+    from PIL import ImageGrab
     assert save_to.endswith('.png')
     stop_after = time.time() + timeout
 
@@ -259,15 +288,9 @@ def screenshot_until_match(save_to, timeout, subimg_candidates, expected_count, 
     while True:
         with ImageGrab.grab(next(gen)) as rgba:
             with rgba.convert(mode='RGB') as screenshot:
-                for subimg_path in subimg_candidates:
-                    with Image.open(subimg_path) as rgba_s:
-                        with rgba_s.convert(mode='RGB') as subimg:
-                            assert subimg.width < 128
-                            assert subimg.height < 128
-                            if count_subimages(screenshot, subimg) == expected_count:
-                                screenshot.save(save_to)
-                                return True
-                if time.time() > stop_after:
+                count_found = try_candidates(screenshot, subimg_candidates, expected_count)
+                if count_found == expected_count or time.time() > stop_after:
                     screenshot.save(save_to)
-                    return False
+                    assert count_found == expected_count
+                    return
         time.sleep(0.5)
