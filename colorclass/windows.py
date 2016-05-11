@@ -1,5 +1,7 @@
 """Windows console screen buffer handlers."""
 
+from __future__ import print_function
+
 import atexit
 import ctypes
 import re
@@ -270,7 +272,7 @@ class WindowsStream(object):
                 continue
             if not RE_SPLIT.match(segment):
                 # No color codes, print regular text.
-                self._original_stream.write(segment)
+                print(segment, file=self._original_stream, end='')
                 self._original_stream.flush()
                 continue
             for color_code in (int(c) for c in RE_NUMBER_SEARCH.findall(segment)[0].split(';')):

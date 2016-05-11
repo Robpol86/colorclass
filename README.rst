@@ -134,6 +134,12 @@ Changelog
 
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+2.1.1 - 2016-05-10
+------------------
+
+Fixed
+    * Printing box drawing characters on Windows from Python 2.6.
+
 2.1.0 - 2016-05-07
 ------------------
 

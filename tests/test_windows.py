@@ -359,3 +359,71 @@ def test_enable_disable(tmpdir):
     with RunNewConsole(command) as gen:
         screenshot_until_match(str(screenshot), 15, with_colors, 2, gen)
         screenshot_until_match(str(screenshot), 15, sans_colors, 2, gen)
+
+
+@pytest.mark.skipif(str(not windows.IS_WINDOWS))
+def test_box_characters(tmpdir):
+    """Test for unicode errors with special characters.
+
+    :param tmpdir: pytest fixture.
+    """
+    screenshot = PROJECT_ROOT.join('test_windows_test_box_characters.png')
+    if screenshot.check():
+        screenshot.remove()
+    script = tmpdir.join('script.py')
+    command = [sys.executable, str(script)]
+
+    script.write(dedent("""\
+    from __future__ import print_function
+    import os, time
+    from colorclass import Color, Windows
+
+    Windows.enable(auto_colors=True)
+    chars = [
+        '+', '-', '|',
+        b'\\xb3'.decode('ibm437'),
+        b'\\xb4'.decode('ibm437'),
+        b'\\xb9'.decode('ibm437'),
+        b'\\xba'.decode('ibm437'),
+        b'\\xbb'.decode('ibm437'),
+        b'\\xbc'.decode('ibm437'),
+        b'\\xbf'.decode('ibm437'),
+        b'\\xc0'.decode('ibm437'),
+        b'\\xc1'.decode('ibm437'),
+        b'\\xc2'.decode('ibm437'),
+        b'\\xc3'.decode('ibm437'),
+        b'\\xc4'.decode('ibm437'),
+        b'\\xc5'.decode('ibm437'),
+        b'\\xc8'.decode('ibm437'),
+        b'\\xc9'.decode('ibm437'),
+        b'\\xca'.decode('ibm437'),
+        b'\\xcb'.decode('ibm437'),
+        b'\\xcc'.decode('ibm437'),
+        b'\\xcd'.decode('ibm437'),
+        b'\\xce'.decode('ibm437'),
+        b'\\xd9'.decode('ibm437'),
+        b'\\xda'.decode('ibm437'),
+    ]
+
+    for c in chars:
+        print(c, end='')
+    print()
+    for c in chars:
+        print(Color.green(c, auto=True), end='')
+    print()
+
+    stop_after = time.time() + 20
+    while not os.path.exists(r'%s') and time.time() < stop_after:
+        time.sleep(0.5)
+    """) % str(screenshot))
+
+    # Setup expected.
+    with_colors = [str(p) for p in PROJECT_ROOT.join('tests').listdir('sub_box_green_*.bmp')]
+    sans_colors = [str(p) for p in PROJECT_ROOT.join('tests').listdir('sub_box_sans_*.bmp')]
+    assert with_colors
+    assert sans_colors
+
+    # Run.
+    with RunNewConsole(command) as gen:
+        screenshot_until_match(str(screenshot), 15, with_colors, 1, gen)
+        screenshot_until_match(str(screenshot), 15, sans_colors, 1, gen)
