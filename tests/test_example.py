@@ -68,7 +68,7 @@ def test_windows_screenshot(colors, light_bg):
     :param bool colors: Enable, disable, or omit color arguments (default has colors).
     :param bool light_bg: Create console with white background color.
     """
-    screenshot = PROJECT_ROOT.join('test_example.png')
+    screenshot = PROJECT_ROOT.join('test_example_test_windows_screenshot.png')
     if screenshot.check():
         screenshot.remove()
     command = [sys.executable, str(PROJECT_ROOT.join('example.py')), 'print', '-w', str(screenshot)]
@@ -81,13 +81,13 @@ def test_windows_screenshot(colors, light_bg):
 
     # Setup expected.
     if colors is False:
-        candidates = [str(p) for p in PROJECT_ROOT.join('tests').listdir('sub_sans_*.bmp')]
+        candidates = [str(p) for p in PROJECT_ROOT.join('tests').listdir('sub_red_sans_*.bmp')]
         expected_count = 27
     elif light_bg:
-        candidates = [str(p) for p in PROJECT_ROOT.join('tests').listdir('sub_dark_fg_*.bmp')]
+        candidates = [str(p) for p in PROJECT_ROOT.join('tests').listdir('sub_red_dark_fg_*.bmp')]
         expected_count = 2
     else:
-        candidates = [str(p) for p in PROJECT_ROOT.join('tests').listdir('sub_light_fg_*.bmp')]
+        candidates = [str(p) for p in PROJECT_ROOT.join('tests').listdir('sub_red_light_fg_*.bmp')]
         expected_count = 2
     assert candidates
 

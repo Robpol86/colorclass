@@ -326,7 +326,7 @@ def test_enable_disable(tmpdir):
 
     :param tmpdir: pytest fixture.
     """
-    screenshot = PROJECT_ROOT.join('test_windows.png')
+    screenshot = PROJECT_ROOT.join('test_windows_test_enable_disable.png')
     if screenshot.check():
         screenshot.remove()
     script = tmpdir.join('script.py')
@@ -350,8 +350,8 @@ def test_enable_disable(tmpdir):
     """) % str(screenshot))
 
     # Setup expected.
-    with_colors = [str(p) for p in PROJECT_ROOT.join('tests').listdir('sub_light_fg_*.bmp')]
-    sans_colors = [str(p) for p in PROJECT_ROOT.join('tests').listdir('sub_sans_*.bmp')]
+    with_colors = [str(p) for p in PROJECT_ROOT.join('tests').listdir('sub_red_light_fg_*.bmp')]
+    sans_colors = [str(p) for p in PROJECT_ROOT.join('tests').listdir('sub_red_sans_*.bmp')]
     assert with_colors
     assert sans_colors
 
