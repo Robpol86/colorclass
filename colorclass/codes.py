@@ -48,7 +48,7 @@ class ANSICodeMapping(Mapping):
     :cvar bool LIGHT_BACKGROUND: Use low intensity color codes.
     """
 
-    DISABLE_COLORS = not (sys.stdout.isatty() or sys.stderr.isatty())  # Disable colors when piped to another program.
+    DISABLE_COLORS = False
     LIGHT_BACKGROUND = False
 
     def __init__(self, value_markup):
@@ -89,6 +89,18 @@ class ANSICodeMapping(Mapping):
     def enable_all_colors(cls):
         """Enable all colors. Strips any color tags or codes."""
         cls.DISABLE_COLORS = False
+
+    @classmethod
+    def disable_if_no_tty(cls):
+        """Disable all colors only if there is no TTY available.
+
+        :return: True if colors are disabled, False if stderr or stdout is a TTY.
+        :rtype: bool
+        """
+        if sys.stdout.isatty() or sys.stderr.isatty():
+            return False
+        cls.disable_all_colors()
+        return True
 
     @classmethod
     def set_dark_background(cls):

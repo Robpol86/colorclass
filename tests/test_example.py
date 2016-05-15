@@ -38,7 +38,7 @@ def test_piped(colors, light_bg):
     assert 'Red' in output
 
     # Verify colors. Output is always stripped of all colors on Windows when piped to non-console (e.g. pytest).
-    if not colors or IS_WINDOWS:
+    if colors is False or IS_WINDOWS:
         assert '\033[' not in output
         assert 'Black Red Green Yellow Blue Magenta Cyan White' in output
         return

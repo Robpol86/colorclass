@@ -47,7 +47,7 @@ def test(monkeypatch, colors, light):
     assert 'Red' in output
 
     # Verify colors. Output is always stripped of all colors on Windows when piped to non-console (e.g. pytest).
-    if not colors or IS_WINDOWS:
+    if colors is False or IS_WINDOWS:
         assert '\033[' not in output
         assert 'Red Red Red' in output
         return

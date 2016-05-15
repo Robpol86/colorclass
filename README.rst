@@ -134,6 +134,15 @@ Changelog
 
 This project adheres to `Semantic Versioning <http://semver.org/>`_.
 
+2.2.0 - 2016-05-14
+------------------
+
+Added
+    * ``disable_if_no_tty()`` function to conditionally disable colors when STDERR and STDOUT are not streams.
+
+Changed
+    * Colors enabled by default always, like it was before v2.0.0.
+
 2.1.1 - 2016-05-10
 ------------------
 

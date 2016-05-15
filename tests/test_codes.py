@@ -91,7 +91,7 @@ def test_disable_colors_piped(tty):
 
     :param bool tty: Pipe to TTY/terminal?
     """
-    assert_statement = 'assert __import__("colorclass").codes.ANSICodeMapping.DISABLE_COLORS is {bool}'
+    assert_statement = 'assert __import__("colorclass").codes.ANSICodeMapping.disable_if_no_tty() is {bool}'
     command_colors_enabled = [sys.executable, '-c', assert_statement.format(bool='False')]
     command_colors_disabled = [sys.executable, '-c', assert_statement.format(bool='True')]
 

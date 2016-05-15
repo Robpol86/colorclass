@@ -58,6 +58,6 @@ setup(
     name='colorclass',
     packages=['colorclass'],
     url='https://github.com/Robpol86/colorclass',
-    version='2.1.1',
+    version='2.2.0',
     zip_safe=True,
 )

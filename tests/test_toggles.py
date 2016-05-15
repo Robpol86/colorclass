@@ -13,6 +13,8 @@ def test_disable():
     assert not toggles.is_enabled()
     toggles.enable_all_colors()
     assert toggles.is_enabled()
+    assert toggles.disable_if_no_tty()  # pytest pipes stderr/stdout.
+    assert not toggles.is_enabled()
 
 
 def test_light_bg():

@@ -11,6 +11,7 @@ https://pypi.python.org/pypi/colorclass
 from colorclass.codes import list_tags  # noqa
 from colorclass.color import Color  # noqa
 from colorclass.toggles import disable_all_colors  # noqa
+from colorclass.toggles import disable_if_no_tty  # noqa
 from colorclass.toggles import enable_all_colors  # noqa
 from colorclass.toggles import is_enabled  # noqa
 from colorclass.toggles import is_light  # noqa
@@ -34,4 +35,4 @@ __all__ = (
 
 __author__ = '@Robpol86'
 __license__ = 'MIT'
-__version__ = '2.1.1'
+__version__ = '2.2.0'

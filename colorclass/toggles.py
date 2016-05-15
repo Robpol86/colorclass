@@ -13,6 +13,15 @@ def enable_all_colors():
     ANSICodeMapping.enable_all_colors()
 
 
+def disable_if_no_tty():
+    """Disable all colors if there is no TTY available.
+
+    :return: True if colors are disabled, False if stderr or stdout is a TTY.
+    :rtype: bool
+    """
+    return ANSICodeMapping.disable_if_no_tty()
+
+
 def is_enabled():
     """Are colors enabled."""
     return not ANSICodeMapping.DISABLE_COLORS
